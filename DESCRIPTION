@@ -1,0 +1,26 @@
+Package: rbaes
+Type: Package
+Title: R Bayesian Analysis and Estimation Stuff
+Version: 0.0.1
+Date: 2017-01-01
+Author: Joseph M. Burling
+Maintainer: <josephburling@gmail.com>
+Description: A set of functions and routines for Bayesian analysis
+License: MIT
+Depends:
+    R (>= 3.0.2),
+    Rcpp (>= 0.12.8),
+    methods (>= 3.3.2)
+Imports:
+    rstan (>= 2.14.1),
+    rstantools (>= 1.1.0),
+    rstanarm (>= 2.13.1),
+    data.table (>= 1.10.0)
+LinkingTo: StanHeaders (>= 2.14.0), 
+    rstan (>= 2.14.1), 
+    rstanarm (>= 2.13.1), BH (>= 1.62.0.1), 
+    Rcpp (>= 0.12.8), 
+    RcppEigen (>= 0.3.2.9.0)
+Suggests:
+    ggplot2
+RoxygenNote: 6.0.1
