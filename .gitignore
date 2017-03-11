@@ -1,0 +1,15 @@
+.DS_Store
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+exec/*.rda
+src/Modules*
+src/rbaes.o
+src/rbaes.so
+src/rbaes.dll
+src/include
+vignettes/*.R
+!vignettes/*.Rmd
+vignettes/*.html
+vignettes/*_files
