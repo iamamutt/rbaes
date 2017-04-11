@@ -37,7 +37,7 @@ ppi <- function(
 #' @param header header name
 #'
 #' @export
-print_stanarm <- function
+print_rstanarm <- function
 (
   stanreg,
   header='Stan model summary'

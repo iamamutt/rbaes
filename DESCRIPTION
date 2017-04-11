@@ -2,7 +2,7 @@ Package: rbaes
 Type: Package
 Title: R Bayesian Analysis and Estimation Stuff
 Version: 0.0.1
-Date: 2017-03-10
+Date: 2017-04-11
 Author: Joseph M. Burling
 Maintainer: <josephburling@gmail.com>
 Description: A set of functions and routines for Bayesian analysis

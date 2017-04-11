@@ -1,6 +1,4 @@
 
-# exported ---------------------------------------------------------------
-
 #' table of LOO comparisons
 #'
 #' @param loo_list a list of objects of the type \code{loo}
@@ -82,6 +80,27 @@ loo_table <- function
   return(out_table)
 }
 
+#' Get model data from stanreg
+#'
+#' @param stanreg object of class stanreg
+#' @param get_y logical value. Include the output columns?
+#'
+#' @return data.table
+#' @export
+#' @examples
+#' stanreg <- example_stanreg()
+#' model_data <- stanreg_dtbl(stanreg, TRUE)
+stanreg_dtbl <- function(stanreg, get_y = TRUE) {
+  dt <- copy(as.data.table(stanreg$glmod$fr))
+
+  if (!get_y) {
+    y <- sub('~', '', deparse(stanreg$formula[1:2]))
+    dt[, eval(y) := NULL]
+  }
+
+  return(dt)
+}
+
 #' get data for contrasts
 #'
 #' @param stanreg stanreg object from rstanarm
@@ -107,18 +126,19 @@ loo_table <- function
 #'
 #' @examples
 #' stanreg <- example_stanreg()
-#' model_data <- stanreg$glmod$fr # compare below to model data
+#' model_data <- stanreg_dtbl(stanreg) # compare below to model data
 #'
 #' contrast_data(stanreg)
 #'
 #' contrast_data(stanreg, new_group=TRUE)
-#' contrast_data(stanreg, new_group='cyl')
+#' contrast_data(stanreg, new_group=c('county'))
 #'
-#' contrast_data(stanreg, margin_ignore = 'am')
+#' contrast_data(stanreg, margin_ignore = 'floor')
 #'
-#' contrast_data(stanreg, TRUE, set_numerics = list(wt = 3.0))
+#' contrast_data(stanreg, TRUE, set_numerics = list(floor = 1))
 #'
-#' contrast_data(stanreg, subset_expression = .~wt < 3)
+#' contrast_data(stanreg, subset_expression = .~ log_uranium > 0)
+#' contrast_data(stanreg, margin_ignore = c('floor'), subset_expression = 1:101)
 contrast_data <- function(
   stanreg,
   new_group = NULL,
@@ -129,9 +149,7 @@ contrast_data <- function(
 ) {
 
   # data from rstanarm model
-  dt <- copy(as.data.table(stanreg$glmod$fr))
-  y <- sub('~', '', deparse(stanreg$formula[1:2]))
-  dt[, eval(y) := NULL]
+  dt <- stanreg_dtbl(stanreg, get_y = FALSE)
 
   # data classes
   dt_classes <- sapply(dt, class)
@@ -206,12 +224,27 @@ contrast_data <- function(
     nums <- nums[!nums %in% margin_ignore]
   }
 
+  # row subsetting
   if (!is.null(subset_expression)) {
-    index <- get_contrast_rows(subset_expression, dt)
+    if (is.logical(subset_expression) && any(subset_expression)) {
+      index <- which(subset_expression)
+    } else if (is.numeric(subset_expression) && length(subset_expression) > 0) {
+      index <- subset_expression
+    } else if (class(subset_expression) == 'formula') {
+      index <- get_contrast_rows(subset_expression, dt)
+    } else {
+      stop('subset_expression must be a formula, integer vector, or logical vector.')
+    }
+
     dt <- dt[index, ]
   }
 
   if (!is.null(nums)) {
+    to_numeric <- sapply(dt[, .SD, .SDcols = nums], class) == 'integer'
+    if (any(to_numeric)) {
+      int_nums <- nums[to_numeric]
+      dt[, eval(int_nums) := lapply(.SD, as.numeric), .SDcols=int_nums]
+    }
     if (is.null(by_fac)) {
       dt[, eval(nums) := lapply(.SD, mean), .SDcols = nums]
     } else {
@@ -251,11 +284,13 @@ contrast_data <- function(
 #'
 #' @examples
 #' stanreg <- example_stanreg()
-#'  cdata <- list(
-#'    c1 = contrast_data(stanreg, TRUE, subset_expression = .~wt < 2),
-#'    c2 = contrast_data(stanreg, TRUE, subset_expression = .~wt < 2.75),
-#'    c3 = contrast_data(stanreg, TRUE, subset_expression = .~wt > 3))
-#' pp_contrast(stanreg, cdata, c(-1, 0.5, 0.5))
+#' cdata <- list(
+#'  c1 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium < -0.5),
+#'  c2 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium >= -0.5 & log_uranium <= 0.5),
+#'  c3 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium > 0.5))
+#'
+#' my_contrast <- pp_contrast(stanreg, cdata, c(-1, 0.5, 0.5))
+#' my_contrast$ci
 pp_contrast <- function
 (
   stanreg,
@@ -292,9 +327,9 @@ pp_contrast <- function
 #' @examples
 #' stanreg <- example_stanreg()
 #' cdata <- list(
-#'  c1 = contrast_data(stanreg, TRUE, subset_expression = .~wt < 2),
-#'  c2 = contrast_data(stanreg, TRUE, subset_expression = .~wt < 2.75),
-#'  c3 = contrast_data(stanreg, TRUE, subset_expression = .~wt > 3))
+#'  c1 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium < -0.5),
+#'  c2 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium >= -0.5 & log_uranium <= 0.5),
+#'  c3 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium > 0.5))
 #' pairwise_contrasts(stanreg, cdata)$ci
 pairwise_contrasts <- function
 (
@@ -422,4 +457,6 @@ pp_cdata <- function(stanreg, cdata, row_stat = median, draws = NULL) {
 
   return(pp)
 }
+
+
 
