@@ -3,7 +3,6 @@
 .Rhistory
 .RData
 .Ruserdata
-<<<<<<< HEAD
 exec/*.rda
 src/Modules*
 src/rbaes.o
