@@ -36,9 +36,11 @@ Posterior predictive contrast
 }
 \examples{
 stanreg <- example_stanreg()
- cdata <- list(
-   c1 = contrast_data(stanreg, TRUE, subset_expression = .~wt < 2),
-   c2 = contrast_data(stanreg, TRUE, subset_expression = .~wt < 2.75),
-   c3 = contrast_data(stanreg, TRUE, subset_expression = .~wt > 3))
-pp_contrast(stanreg, cdata, c(-1, 0.5, 0.5))
+cdata <- list(
+ c1 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium < -0.5),
+ c2 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium >= -0.5 & log_uranium <= 0.5),
+ c3 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium > 0.5))
+
+my_contrast <- pp_contrast(stanreg, cdata, c(-1, 0.5, 0.5))
+my_contrast$ci
 }

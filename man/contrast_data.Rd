@@ -39,16 +39,17 @@ get data for contrasts
 }
 \examples{
 stanreg <- example_stanreg()
-model_data <- stanreg$glmod$fr # compare below to model data
+model_data <- stanreg_dtbl(stanreg) # compare below to model data
 
 contrast_data(stanreg)
 
 contrast_data(stanreg, new_group=TRUE)
-contrast_data(stanreg, new_group='cyl')
+contrast_data(stanreg, new_group=c('county'))
 
-contrast_data(stanreg, margin_ignore = 'am')
+contrast_data(stanreg, margin_ignore = 'floor')
 
-contrast_data(stanreg, TRUE, set_numerics = list(wt = 3.0))
+contrast_data(stanreg, TRUE, set_numerics = list(floor = 1))
 
-contrast_data(stanreg, subset_expression = .~wt < 3)
+contrast_data(stanreg, subset_expression = .~ log_uranium > 0)
+contrast_data(stanreg, margin_ignore = c('floor'), subset_expression = 1:101)
 }
