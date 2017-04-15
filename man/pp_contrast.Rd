@@ -4,8 +4,7 @@
 \alias{pp_contrast}
 \title{Posterior predictive contrast}
 \usage{
-pp_contrast(stanreg, cdata, ccoef, width = 0.95, draws = NULL,
-  yfun = median)
+pp_contrast(stanreg, cdata, ccoef, width = 0.95, yfun = median, ...)
 }
 \arguments{
 \item{stanreg}{stanreg object from rstanarm.}
@@ -19,13 +18,12 @@ sets in \code{cdata}.}
 \item{width}{confidence interval width. Sent to the \code{prob} argument
 from \code{\link[rstanarm]{posterior_interval}}.}
 
-\item{draws}{number of samples to use from the posterior predictive
-distribution. Sent to the \code{draws} argument from
-\code{\link[rstanarm]{posterior_interval}}.}
-
 \item{yfun}{the stat function to use to collapse the predictions into a
-scalar value. Corresponds to the mean of the predicted responses for each
-data set in \code{cdata}.}
+scalar value. Corresponds to the average of the predicted responses for each
+data set in \code{cdata}. Default is median.}
+
+\item{...}{additional parameters passed to the function \code{\link[rstanarm]{posterior_predict}}
+\code{\link[rstanarm]{posterior_interval}}.}
 }
 \value{
 list containing the confidence interval and posterior predictive

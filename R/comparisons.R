@@ -271,12 +271,11 @@ contrast_data <- function(
 #'   sets in \code{cdata}.
 #' @param width confidence interval width. Sent to the \code{prob} argument
 #'   from \code{\link[rstanarm]{posterior_interval}}.
-#' @param draws number of samples to use from the posterior predictive
-#'   distribution. Sent to the \code{draws} argument from
-#'   \code{\link[rstanarm]{posterior_interval}}.
 #' @param yfun the stat function to use to collapse the predictions into a
-#'   scalar value. Corresponds to the mean of the predicted responses for each
-#'   data set in \code{cdata}.
+#'   scalar value. Corresponds to the average of the predicted responses for each
+#'   data set in \code{cdata}. Default is median.
+#' @param ... additional parameters passed to the function \code{\link[rstanarm]{posterior_predict}}
+#'   \code{\link[rstanarm]{posterior_interval}}.
 #'
 #' @return list containing the confidence interval and posterior predictive
 #'   contrast difference
@@ -297,8 +296,8 @@ pp_contrast <- function
   cdata,
   ccoef,
   width = 0.95,
-  draws = NULL,
-  yfun = median
+  yfun = median,
+  ...
 )
 {
   # posterior predict
@@ -306,21 +305,22 @@ pp_contrast <- function
     stanreg,
     cdata = cdata,
     row_stat = yfun,
-    draws = draws)
+    ...)
 
   # posterior predictive contrast
-  ppc <- apply_contrast(pp_list, ccoef)
+  pp <- apply_contrast(pp_list, ccoef)
 
   # contrast interval
-  ci <- rstanarm::posterior_interval(ppc, prob = width)
+  ci <- rstanarm::posterior_interval(pp, prob = width)
 
-  nlist(ci, ppc)
+  nlist(ci, pp)
 }
 
 #' posterior predictive contrasts for all pairwise comparisons in a list
 #'
 #' @inheritParams pp_contrast
-#'
+#' @param pp_all posterior predictions for each list item in cdata. Defaults to
+#'   \code{FALSE}
 #' @return list containing CI matrix and posterior differences
 #' @export
 #'
@@ -330,21 +330,22 @@ pp_contrast <- function
 #'  c1 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium < -0.5),
 #'  c2 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium >= -0.5 & log_uranium <= 0.5),
 #'  c3 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium > 0.5))
-#' pairwise_contrasts(stanreg, cdata)$ci
+#' pairwise_contrasts(stanreg, cdata)$ci.cont
 pairwise_contrasts <- function
 (
   stanreg,
   cdata,
   width=0.95,
-  draws=NULL,
-  yfun=median
+  yfun=median,
+  pp_all=FALSE,
+  ...
 )
 {
   pp_list <- pp_cdata(
     stanreg,
     cdata = cdata,
     row_stat = yfun,
-    draws = draws)
+    ...)
 
   n_datasets <- length(pp_list)
   cont_pairs <- pairwise(n_datasets)
@@ -364,19 +365,25 @@ pairwise_contrasts <- function
     )
   })
 
-  # get confidence intervals
-  ci_list <-
-    lapply(diff_list, rstanarm::posterior_interval, prob = width)
-
-  # CIs to table
-  ci <- do.call(rbind, ci_list)
-  rownames(ci) <- cont_names
-
   # posterior contrasts matrix
-  ppc <- do.call(cbind, diff_list)
-  colnames(ppc) <- cont_names
+  pred.cont <- do.call(cbind, diff_list)
+  colnames(pred.cont) <- cont_names
 
-  nlist(ci, ppc)
+  # get confidence intervals
+  ci.cont <- rstanarm::posterior_interval(pred.cont, prob = width)
+
+  if (pp_all) {
+    pred.each <- do.call(cbind, lapply(pp_list, function(p) {
+      apply_contrast(list(p), 1)
+    }))
+    colnames(pred.each) <- names(pp_list)
+    ci.each <- rstanarm::posterior_interval(pred.each, prob = width)
+  } else {
+    pred.each <- NULL
+    ci.each <- NULL
+  }
+
+  nlist(ci.cont, pred.cont, ci.each, pred.each)
 }
 
 
@@ -412,7 +419,7 @@ apply_contrast <- function(pp_list, ccoef) {
   as.matrix(apply(do.call(cbind, pp_list), 1, sum))
 }
 
-pp_cdata <- function(stanreg, cdata, row_stat = median, draws = NULL) {
+pp_cdata <- function(stanreg, cdata, row_stat = median, ...) {
 
   if (!'stanreg' %in% class(stanreg)) {
     stop('"stanreg" arg must be a stanreg object')
@@ -447,13 +454,27 @@ pp_cdata <- function(stanreg, cdata, row_stat = median, draws = NULL) {
     cnames[no_names] <- paste('contrast', which(no_names))
   }
 
-  pp <- lapply(cdata, function(nd) {
-    posterior <- rstanarm::posterior_predict(
-      stanreg, newdata=nd, draws=draws)
-    as.matrix(apply(posterior, 1, row_stat))
-  })
+  # combine all the data to use the same draws
+  cdata_bind <- rbindlist(
+    cdata, use.names = TRUE, fill = TRUE,
+    idcol="__cont_idx")
 
-  names(pp) <- cnames
+  posterior <- rstanarm::posterior_predict(stanreg, newdata=cdata_bind, ...)
+
+  # get indices of which cols to pull from posterior matrix
+  cont_grps <- dtbl2list(cdata_bind[, .I, by = '__cont_idx'], `__cont_idx`)
+
+  # mean of rows at cols x
+  pp <- lapply(cont_grps, function(i) {
+    cidx <- i$I
+    y <- posterior[, cidx]
+    if (!is.null(dim(y))) {
+      y <- apply(y, 1, row_stat)
+    }
+
+    matrix(y)
+
+  })
 
   return(pp)
 }

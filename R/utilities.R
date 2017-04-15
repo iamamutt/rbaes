@@ -53,3 +53,16 @@ print_rstanarm <- function
   cat('\n')
   return(invisible(NULL))
 }
+
+cdata_list <- function() {
+  library(data.table)
+  stanreg <- example_stanreg()
+  cdata <- list(
+    c1 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium < -0.5),
+    c2 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium >= -0.5 & log_uranium <= 0.5),
+    c3 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium > 0.5))
+
+  assign('stanreg', stanreg, .GlobalEnv)
+  assign('cdata', cdata, .GlobalEnv)
+  return(NULL)
+}
