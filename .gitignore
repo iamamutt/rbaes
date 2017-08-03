@@ -5,6 +5,7 @@
 .Ruserdata
 exec/*.rda
 src/Modules*
+src/init.o
 src/rbaes.o
 src/rbaes.so
 src/rbaes.dll
