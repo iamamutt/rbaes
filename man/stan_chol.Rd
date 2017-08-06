@@ -7,14 +7,14 @@
 stan_chol(mat)
 }
 \arguments{
-\item{mat}{A covariance or correlation matrix}
+\item{mat}{A cholesky factored covariance or correlation matrix}
 }
 \description{
 Stan formatted Cholesky factored cov/cor matrix
 }
 \examples{
 # make matrix
-L <- rWishart(1, 100, diag(5))[,,1]
+L <- solve(rWishart(1, 6, diag(5))[,,1])
 
 # compare
 l1 <- chol(L)

@@ -12,8 +12,7 @@ dmode(x, adjust = 1.5)
 \item{adjust}{Bandwidth adjustment. See \link{density}.}
 }
 \description{
-Finds the mode using the \link{density} function and then obtains the
-maximum value.
+Finds the mode using the \link{density} function and then obtains the maximum value.
 }
 \examples{
 x <- rchisq(1000, 3)

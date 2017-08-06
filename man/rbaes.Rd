@@ -4,12 +4,12 @@
 \name{rbaes}
 \alias{rbaes}
 \alias{rbaes-package}
-\title{mejr: rbaes}
+\title{R Bayesian Analysis and Estimation Stuff}
 \description{
-A set of functions and routines for Bayesian analysis
+A set of functions and routines for Bayesian data analysis
 }
 \section{Info}{
- See \code{library(help="baes")} for help. \cr \cr Below are
+ See \code{library(help="rbaes")} for help. \cr \cr Below are
   some useful links I can click on instead of google searching them: \cr \cr
   \url{http://mc-stan.org/}
 }

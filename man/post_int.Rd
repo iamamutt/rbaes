@@ -10,21 +10,19 @@ post_int(x, mid = "median", int = "ci", widths = c(0.5, 0.9), adj = 1.5,
 \arguments{
 \item{x}{Vector of numeric values. Typically a posterior sample.}
 
-\item{mid}{Central tendency estimator. Defaults to \code{"median"}. Other
-options include \code{c("mean", "mode")}.}
+\item{mid}{Central tendency estimator. Defaults to \code{"median"}. Other options include
+\code{c("mean", "mode")}.}
 
 \item{int}{interval type, either "hdi" or "ci"}
 
 \item{widths}{interval widths}
 
-\item{adj}{Bandwidth adjustment used only with the \code{"mode"} estimator.
-See \link{dmode}.}
+\item{adj}{Bandwidth adjustment used only with the \code{"mode"} estimator. See \link{dmode}.}
 
-\item{rope}{Region of practical equivalence. Check how much of the
-distribution is within rope value.}
+\item{rope}{Region of practical equivalence. Check how much of the distribution is within rope
+value.}
 
-\item{warn}{Turn off warning for flat intervals found (multiple possible
-values)}
+\item{warn}{Turn off warning for flat intervals found (multiple possible values)}
 }
 \value{
 data.table
