@@ -1,21 +1,16 @@
 
 #' Highest density interval
 #'
-#' This is a function that will calculate the highest density interval from a
-#' posterior sample.
+#' This is a function that will calculate the highest density interval from a posterior sample.
 #'
-#' The default is to calcualte the highest 95 percent interval. It can be used
-#' with any numeric vector instead of having to use one of the specific MCMC
-#' classes. This function has been adapted from John K. Kruschke (2011). Doing
-#' Bayesian Data Analaysis: A Tutorial with R and BUGS.
+#' The default is to calcualte the highest 95 percent interval. It can be used with any numeric
+#' vector instead of having to use one of the specific MCMC classes. This function has been adapted
+#' from John K. Kruschke (2011). Doing Bayesian Data Analaysis: A Tutorial with R and BUGS.
 #'
-#' @param x Numeric vector of a distribution of data, typically a posterior
-#'   sample
-#' @param prob Width of the interval from some distribution. Defaults to
-#'   \code{0.95}.
-#' @param warn Option to turn off multiple sample warning message Must be in
-#'   the range of \code{[0, 1]}.
-#' @author John K. Kruschke
+#' @param x Numeric vector of a distribution of data, typically a posterior sample
+#' @param prob Width of the interval from some distribution. Defaults to \code{0.95}.
+#' @param warn Option to turn off multiple sample warning message Must be in the range of \code{[0,
+#'   1]}.
 #' @return Numeric range
 #' @export
 #' @examples
@@ -27,31 +22,24 @@
 #' hist(x, br=50)
 #' abline(v=hdi_95, col="red")
 #' abline(v=hdi_50, col="green")
-hdi <- function(x, prob=0.95, warn=TRUE) {
-
+hdi <- function(x, prob = 0.95, warn = TRUE) {
   sorted_x <- sort(x)
   x_size <- length(sorted_x)
   window_size <- floor(prob * length(sorted_x))
   scan_index <- 1:(x_size - window_size)
 
   # vectorized difference between edges of cumulative distribution based on scan_length
-  window_width_diff <-
-    sorted_x[scan_index + window_size] - sorted_x[scan_index]
+  window_width_diff <- sorted_x[scan_index + window_size] - sorted_x[scan_index]
 
   # find minimum of width differences, check for multiple minima
   candidates <- which(window_width_diff == min(window_width_diff))
   n_c <- length(candidates)
-
   if (warn && n_c > 1) {
-    warning(simpleWarning(
-      paste0(
-        "Multiple candidate thresholds found for HDI,",
-        "choosing the middle of possible limits."
-      )
-    ))
+    warning(simpleWarning(paste0("Multiple candidate thresholds found for HDI,",
+                                 "choosing the middle of possible limits.")))
   }
 
-  # if more than one minimum get average index
+  # if more than one minimum, get average index
   if (length(candidates) > 1) {
     get_diff <- c(1, candidates[2:n_c] - candidates[1:(n_c - 1)])
     if (any(get_diff != 1)) {
@@ -59,17 +47,14 @@ hdi <- function(x, prob=0.95, warn=TRUE) {
       candidates <- candidates[1:stop_i[1]]
     }
     min_i <- floor(mean(candidates))
-  } else
-    min_i <- candidates
+  } else min_i <- candidates
 
   # get values based on minimum
   hdi_min <- sorted_x[min_i]
   hdi_max <- sorted_x[min_i + window_size]
   hdi_vals <- c(hdi_min, hdi_max)
-
   return(hdi_vals)
 }
-
 
 #' Posterior intervals
 #'
@@ -77,15 +62,13 @@ hdi <- function(x, prob=0.95, warn=TRUE) {
 #' @return data.table
 #'
 #' @param x Vector of numeric values. Typically a posterior sample.
-#' @param mid Central tendency estimator. Defaults to \code{"median"}. Other
-#'   options include \code{c("mean", "mode")}.
+#' @param mid Central tendency estimator. Defaults to \code{"median"}. Other options include
+#'   \code{c("mean", "mode")}.
 #' @param widths interval widths
-#' @param adj Bandwidth adjustment used only with the \code{"mode"} estimator.
-#'   See \link{dmode}.
-#' @param rope Region of practical equivalence. Check how much of the
-#'   distribution is within rope value.
-#' @param warn Turn off warning for flat intervals found (multiple possible
-#'   values)
+#' @param adj Bandwidth adjustment used only with the \code{"mode"} estimator. See \link{dmode}.
+#' @param rope Region of practical equivalence. Check how much of the distribution is within rope
+#'   value.
+#' @param warn Turn off warning for flat intervals found (multiple possible values)
 #' @param int interval type, either "hdi" or "ci"
 #'
 #' @examples
@@ -182,7 +165,6 @@ post_int <- function(
 }
 
 
-
 #' Mode from counting frequency
 #'
 #' Finds the most frequent value from a vector of integers
@@ -202,8 +184,7 @@ cmode <- function(x) {
 
 #' Mode from density estimation
 #'
-#' Finds the mode using the \link{density} function and then obtains the
-#' maximum value.
+#' Finds the mode using the \link{density} function and then obtains the maximum value.
 #'
 #' @param x Value vector. Numeric or integers.
 #' @param adjust Bandwidth adjustment. See \link{density}.
@@ -217,37 +198,30 @@ cmode <- function(x) {
 #' @export
 dmode <- function(x, adjust = 1.5) {
   cut <- hdi(x, 0.99)
-  d <- density(
-    x,
-    n = 1000,
-    bw = "SJ",
-    from = cut[1],
-    to = cut[2],
-    adjust = adjust
-  )
+  d <- density(x, n = 1000, bw = "SJ", from = cut[1], to = cut[2], adjust = adjust)
   d$x[which.max(d$y)]
 }
 
 
 #' Stan formatted Cholesky factored cov/cor matrix
 #'
-#' @param mat A covariance or correlation matrix
+#' @param mat A cholesky factored covariance or correlation matrix
 #'
 #' @examples
 #' # make matrix
-#' L <- rWishart(1, 100, diag(5))[,,1]
+#' L <- solve(rWishart(1, 6, diag(5))[,,1])
 #'
 #' # compare
 #' l1 <- chol(L)
 #' l2 <- stan_chol(L)
 #' @export
 stan_chol <- function(mat) {
-  L <- chol(mat) # return(t(L))
+  L <- chol(mat)
   l <- dim(L)
   Lp <- array(0, l)
   for (M in l[1]:1) {
     for (N in l[2]:1) {
-      Lp[M,N] <- L[N,M]
+      Lp[M, N] <- L[N, M]
     }
   }
   return(Lp)

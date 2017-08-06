@@ -12,11 +12,7 @@
 #' stanreg2 <- update(stanreg, . ~ . + floor:log_uranium)
 #' loo_list <- lapply(list(stanreg, stanreg2), rstanarm::loo)
 #' loo_table(loo_list)
-loo_table <- function
-(
-  loo_list,
-  stat = "looic"
-)
+loo_table <- function(loo_list, stat = "looic")
 {
   n_fit <- length(loo_list)
   n_compare <- pairwise(n_fit)
@@ -139,15 +135,9 @@ stanreg_dtbl <- function(stanreg, get_y = TRUE) {
 #'
 #' contrast_data(stanreg, subset_expression = .~ log_uranium > 0)
 #' contrast_data(stanreg, margin_ignore = c('floor'), subset_expression = 1:101)
-contrast_data <- function(
-  stanreg,
-  new_group = NULL,
-  marginalize_factors = NULL,
-  margin_ignore = NULL,
-  set_numerics = NULL,
-  subset_expression = NULL
-) {
-
+contrast_data <- function(stanreg, new_group = NULL, marginalize_factors = NULL,
+                          margin_ignore = NULL, set_numerics = NULL, subset_expression = NULL)
+{
   # data from rstanarm model
   dt <- stanreg_dtbl(stanreg, get_y = FALSE)
 
@@ -331,15 +321,7 @@ pp_contrast <- function
 #'  c2 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium >= -0.5 & log_uranium <= 0.5),
 #'  c3 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium > 0.5))
 #' pairwise_contrasts(stanreg, cdata)$ci.cont
-pairwise_contrasts <- function
-(
-  stanreg,
-  cdata,
-  width=0.95,
-  yfun=median,
-  pp_all=FALSE,
-  ...
-)
+pairwise_contrasts <- function(stanreg, cdata, width=0.95, yfun=median, pp_all=FALSE, ...)
 {
   pp_list <- pp_cdata(
     stanreg,
@@ -385,8 +367,6 @@ pairwise_contrasts <- function
 
   nlist(ci.cont, pred.cont, ci.each, pred.each)
 }
-
-
 
 # subfunctions -----------------------------------------------------------
 
@@ -478,6 +458,4 @@ pp_cdata <- function(stanreg, cdata, row_stat = median, ...) {
 
   return(pp)
 }
-
-
 
