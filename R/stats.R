@@ -203,26 +203,32 @@ dmode <- function(x, adjust = 1.5) {
 }
 
 
-#' Stan formatted Cholesky factored cov/cor matrix
+#' Pooled standard deviation
 #'
-#' @param mat A cholesky factored covariance or correlation matrix
+#' Get pooled standard deviation from a vector of SDs and sample sizes
+#'
+#' @param sd_vec numeric vector of standard deviations
+#' @param n_vec sample sizes corresponding to the standard deviations
+#'
+#' @return numeric value
+#' @export
 #'
 #' @examples
-#' # make matrix
-#' L <- solve(rWishart(1, 6, diag(5))[,,1])
-#'
-#' # compare
-#' l1 <- chol(L)
-#' l2 <- stan_chol(L)
-#' @export
-stan_chol <- function(mat) {
-  L <- chol(mat)
-  l <- dim(L)
-  Lp <- array(0, l)
-  for (M in l[1]:1) {
-    for (N in l[2]:1) {
-      Lp[M, N] <- L[N, M]
-    }
+#' pooled_sd(c(1, 5), c(100, 8))
+pooled_sd <- function(sd_vec, n_vec) {
+  if (is.vector(sd_vec)) {
+    sd_vec <- matrix(sd_vec, ncol = length(sd_vec))
   }
-  return(Lp)
+  if (is.vector(n_vec)) {
+    n_vec <- matrix(n_vec, ncol = length(sd_vec))
+  }
+  if (ncol(sd_vec) != ncol(n_vec)) {
+    stop("SD vec must equal length of N vec")
+  }
+  if (nrow(n_vec) == 1 & nrow(sd_vec) > 1) {
+    n_vec <- matrix(rep(n_vec, each = nrow(sd_vec)),
+                    nrow = nrow(sd_vec))
+  }
+  sqrt(rowSums((n_vec - 1) * sd_vec ^ 2) /
+         (rowSums(n_vec) - ncol(n_vec)))
 }

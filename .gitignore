@@ -9,10 +9,12 @@
 exec/*.rda
 junk/
 rbaes.7z
+Read-and-delete-me
 src/*.dll
 src/*.o
 src/*.so
 src/init.o
+src/stan_files/*.o
 src/Modules*
 vignettes/*_files
 vignettes/*.html

@@ -1,4 +1,3 @@
-
 #' table of LOO comparisons
 #'
 #' @param loo_list a list of objects of the type \code{loo}
@@ -8,12 +7,15 @@
 #' @export
 #'
 #' @examples
-#' stanreg <- example_stanreg()
-#' stanreg2 <- update(stanreg, . ~ . + floor:log_uranium)
-#' loo_list <- lapply(list(stanreg, stanreg2), rstanarm::loo)
+#' stanreg1 <- example_stanreg()
+#' stanreg2 <- update(stanreg1, . ~ . - 1)
+#' stanreg3 <- update(stanreg1, . ~ . + floor:log_uranium)
+#' loo_list <- lapply(list(stanreg1, stanreg2, stanreg3), rstanarm::loo)
 #' loo_table(loo_list)
-loo_table <- function(loo_list, stat = "looic")
+#' loo_table(loo_list, "elpd_loo")
+loo_table <- function(loo_list, stat = c("looic", "elpd_loo", "p_loo"))
 {
+  stat <- stat[1]
   n_fit <- length(loo_list)
   n_compare <- pairwise(n_fit)
   lnames <- names(loo_list)
@@ -36,29 +38,39 @@ loo_table <- function(loo_list, stat = "looic")
 
   loo_comp <- list()
 
+  p_alpha <- 0.95
+
   tbl_names <- c(
     toupper(paste(stat, "L")),
     toupper(paste(stat, "R")),
     toupper(paste(stat, "Diff.")),
     "SE DIFF.",
-    "CI  5%",
-    "CI 95%")
+    paste0("CI", names(loo_ci(1,1,2,p_alpha))))
+
+  elpd_order <- ifelse(stat == "elpd_loo", TRUE, FALSE)
 
   for (p in 1:nrow(n_compare)) {
     p1 <- n_compare[p, 1]
     p2 <- n_compare[p, 2]
     mod_names <- lnames[c(p1, p2)]
     lp_data <- list(ldata[[p1]]$lp, ldata[[p2]]$lp)
+    n_obs <- unlist(lapply(lp_data, length))
 
-    if (any(unlist(lapply(lp_data, is.na)))) {
-      loo_comp[[p]] <- NULL
+    has_nas <- any(unlist(lapply(lp_data, is.na)))
+    has_diff_n <- n_obs[1] != n_obs[2]
+
+    if (has_nas | has_diff_n) {
+      loo_comp[[p]] <- NA
     } else {
       sum_data <- c(ldata[[p1]]$sum_lp, ldata[[p2]]$sum_lp)
-      m_order <- order(sum_data)
+      m_order <- order(sum_data, decreasing = elpd_order)
       loo_diff_data <- lp_data[[m_order[2]]] - lp_data[[m_order[1]]]
+
       loo_diff <- sum(loo_diff_data)
       loo_se <- sqrt(var(loo_diff_data) * length(loo_diff_data))
-      loo_cint <- loo_ci(loo_diff, loo_se)
+      loo_cint <- loo_ci(loo_diff, loo_se, length(loo_diff_data), p_alpha)
+
+      sig_ast <- ifelse(all(loo_cint < 0) || all(loo_cint > 0), "* ", "  ")
       tbl <- data.table::data.table(
         C = c(better = sum_data[m_order[1]],
               worse = sum_data[m_order[2]],
@@ -67,7 +79,7 @@ loo_table <- function(loo_list, stat = "looic")
               cil = loo_cint[1],
               ciu = loo_cint[2])
       )
-      names(tbl) <- paste(mod_names[m_order[1]], "<", mod_names[m_order[2]])
+      names(tbl) <- paste0('[', mod_names[m_order[1]], sig_ast, mod_names[m_order[2]], ']')
       loo_comp[[p]] <- tbl
     }
   }
@@ -366,96 +378,5 @@ pairwise_contrasts <- function(stanreg, cdata, width=0.95, yfun=median, pp_all=F
   }
 
   nlist(ci.cont, pred.cont, ci.each, pred.each)
-}
-
-# subfunctions -----------------------------------------------------------
-
-loo_ci <- function(x, s, p = 0.95) {
-  se <- qnorm(p) * s
-  ci <- c(x - se, x + se)
-  names(ci) <- c("05%", "95%")
-  return(ci)
-}
-
-get_contrast_rows <- function(form, data) {
-  if (nchar(deparse(form[2])) != 3) {
-    stop('improper contrast formula specification')
-  }
-
-  data[, eval(form[-1])][[1]]
-}
-
-apply_contrast <- function(pp_list, ccoef) {
-  n_pp <- length(pp_list)
-
-  if (length(ccoef) != n_pp) {
-    stop('length coef must match length pp_list')
-  }
-
-  for (pp in seq_len(n_pp)) {
-    pp_list[[pp]] <- pp_list[[pp]] * ccoef[pp]
-  }
-
-  as.matrix(apply(do.call(cbind, pp_list), 1, sum))
-}
-
-pp_cdata <- function(stanreg, cdata, row_stat = median, ...) {
-
-  if (!'stanreg' %in% class(stanreg)) {
-    stop('"stanreg" arg must be a stanreg object')
-  }
-
-  if (!is.list(cdata)) {
-    stop('"cdata" must be a list of datasets to compare')
-  }
-
-  n_datasets <- length(cdata)
-
-  if (n_datasets < 2) {
-    stop('need at least 2 contrast data sets')
-  }
-
-  cdata <- lapply(cdata, function(d) {
-    if (!is.data.table(d)) {
-      d <- as.data.table(d)
-    }
-    return(d)
-  })
-
-  cnames <- names(cdata)
-
-  if (is.null(cnames)) {
-    cnames <- paste('contrast', 1:n_datasets)
-  }
-
-  no_names <- !nzchar(cnames)
-
-  if (any(no_names)) {
-    cnames[no_names] <- paste('contrast', which(no_names))
-  }
-
-  # combine all the data to use the same draws
-  cdata_bind <- rbindlist(
-    cdata, use.names = TRUE, fill = TRUE,
-    idcol="__cont_idx")
-
-  posterior <- rstanarm::posterior_predict(stanreg, newdata=cdata_bind, ...)
-
-  # get indices of which cols to pull from posterior matrix
-  cont_grps <- dtbl2list(cdata_bind[, .I, by = '__cont_idx'], `__cont_idx`)
-
-  # mean of rows at cols x
-  pp <- lapply(cont_grps, function(i) {
-    cidx <- i$I
-    y <- posterior[, cidx]
-    if (!is.null(dim(y))) {
-      y <- apply(y, 1, row_stat)
-    }
-
-    matrix(y)
-
-  })
-
-  return(pp)
 }
 

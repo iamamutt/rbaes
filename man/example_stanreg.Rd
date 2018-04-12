@@ -4,7 +4,12 @@
 \alias{example_stanreg}
 \title{Stan example model}
 \usage{
-example_stanreg()
+example_stanreg(iter = 1000, chains = 2)
+}
+\arguments{
+\item{iter}{number of iterations for stan_glmer}
+
+\item{chains}{number of chains for stan_glmer}
 }
 \value{
 stanfit obj

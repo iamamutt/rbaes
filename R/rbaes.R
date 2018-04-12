@@ -6,6 +6,7 @@
 #'   some useful links I can click on instead of google searching them: \cr \cr
 #'   \url{http://mc-stan.org/}
 #' @import data.table
+#' @import ggplot2
 #' @useDynLib rbaes, .registration = TRUE
 #' @docType package
 #' @name rbaes

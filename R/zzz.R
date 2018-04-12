@@ -1,7 +1,7 @@
 .onLoad <- function(libname, pkgname) {
-    stanmods <- names(stanmodels)
-    if (length(stanmods != 0)) {
-        modules <- paste0("stan_fit4", names(stanmodels), "_mod")
-        for (m in modules) loadModule(m, what = TRUE)
-    }
+  if (length(names(stanmodels)) < 1) {
+    return(invisible())
+  }
+  modules <- paste0("stan_fit4", names(stanmodels), "_mod")
+  for (m in modules) Rcpp::loadModule(m, what = TRUE)
 }

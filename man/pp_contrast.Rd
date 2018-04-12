@@ -27,7 +27,7 @@ data set in \code{cdata}. Default is median.}
 }
 \value{
 list containing the confidence interval and posterior predictive
-  contrast difference
+contrast difference
 }
 \description{
 Posterior predictive contrast

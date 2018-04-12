@@ -1,16 +1,63 @@
+#' Posterior predict data.table
+#'
+#' @param object stanfit object
+#' @param newdata data to use for prediction
+#' @param append add data columns to predictions
+#' @param fn  posterior_predict or posterior_linpred
+#' @param ... options passed to rstanarm::posterior_predict
+#'
+#' @return Posterior prediction matrix as a data.table, merging newdata if available.
+#' @export
+#'
+#' @examples
+#' #TODO:
+post_pred_dtable <-
+  function(object,
+           newdata = NULL,
+           append = TRUE,
+           fn = rstanarm::posterior_predict,
+           ...) {
+    pred <- fn(object, newdata = newdata, ...)
+    pred <- data.table::as.data.table(pred)
+    pred[, .sample := 1:.N]
+    pred <-
+      melt.data.table(
+        pred,
+        id.vars = ".sample",
+        variable.name = ".obs",
+        value.name = ".y"
+      )
+    pred[, .obs := as.integer(.obs)]
+    pred[, .sample := as.integer(.sample)]
+    if (!is.null(newdata) & append) {
+      if (!is.data.table(newdata)) {
+        dt <- as.data.table(newdata)
+      } else {
+        dt <- data.table::copy(newdata)
+      }
+      dt[, .obs := 1:.N]
+      pred <- merge(dt, pred, by = ".obs")
+    }
+    return(pred)
+  }
 
 #' Stan example model
+#'
+#' @param iter number of iterations for stan_glmer
+#' @param chains number of chains for stan_glmer
 #'
 #' @return stanfit obj
 #' @export
 #'
 #' @examples
 #' stanfit <- example_stanreg()
-example_stanreg <- function() {
+example_stanreg <- function(iter = 1000, chains = 2) {
   rstanarm::stan_glmer(
-    log_radon ~ floor * log_uranium + (1 | county),
+    log_radon ~ floor + log_uranium + (1 | county),
     data = rstanarm::radon,
-    iter = 1000, chains = 2)
+    iter = iter,
+    chains = chains
+  )
 }
 
 #' Example stan model and data
@@ -88,24 +135,6 @@ example_stan <- function(n=30, seed=NULL, data_only=FALSE) {
   }
 }
 
-
-n_post_draws <- function(stanfit) {
-  pss <- stanfit$stanfit@sim$n_save
-  sum(pss - stanfit$stanfit@sim$warmup2)
-}
-
-
-ppi <- function(data, fit, fun = identity, form = NULL, prob = 0.9, n = 1)
-{
-  pp <- do.call(rbind, lapply(1:n, function(i) {
-    rstanarm::posterior_predict(fit, data, fun = fun, re.form = form)
-  }))
-  pp_int <- rstantools::posterior_interval(pp, prob = prob)
-  yhat <- data.table(apply(pp, 2, median), pp_int)
-  names(yhat) <- c("c", "l", "r")
-  return(cbind(data, yhat))
-}
-
 #' Alternative rstanarm print
 #'
 #' @param stanreg a stanreg object
@@ -125,17 +154,21 @@ print_rstanarm <- function(stanreg, header = "Stan model summary") {
   return(invisible(NULL))
 }
 
-cdata_list <- function() {
-  library(data.table)
-  stanreg <- example_stanreg()
-  cdata <- list(
-    c1 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium < -0.5),
-    c2 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium >= -0.5 & log_uranium <= 0.5),
-    c3 = contrast_data(stanreg, TRUE, margin_ignore = 'floor', subset_expression = .~ log_uranium > 0.5))
-
-  assign('stanreg', stanreg, .GlobalEnv)
-  assign('cdata', cdata, .GlobalEnv)
-  return(NULL)
+#' Number of MCMC samples from model
+#'
+#' @param object stanreg or stanfit object
+#'
+#' @return scalar value
+#' @export
+#'
+#' @examples
+#'
+n_mcmc_samples <- function(object) {
+  if ('stanreg' %in% class(object)) {
+    n_post_draws(object)
+  } else if ('stanfit' %in% class(object)) {
+    sum(object@sim$n_save - object@sim$warmup2)
+  } else {
+    stop('object is not some kind of stan fitted model')
+  }
 }
-
-

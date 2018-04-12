@@ -373,21 +373,6 @@ cohens_d <- function(x, sdx, y = NULL, sdy = NULL, nx = NULL, ny = NULL, one_sam
   }
 }
 
-pooled_sd <- function(sd_vec, n_vec)
-{
-  if (is.vector(sd_vec)) {
-    sd_vec <- matrix(sd_vec, ncol = length(sd_vec))
-  }
-  if (is.vector(n_vec)) {
-    n_vec <- matrix(n_vec, ncol = length(sd_vec))
-  }
-  if (ncol(sd_vec) != ncol(n_vec))
-    stop("SD vec must equal length of N vec")
-  if (nrow(n_vec) == 1 & nrow(sd_vec) > 1)
-    n_vec <- matrix(rep(n_vec, each = nrow(sd_vec)), nrow = nrow(sd_vec))
-  sqrt(rowSums((n_vec - 1) * sd_vec^2)/(rowSums(n_vec) - ncol(n_vec)))
-}
-
 
 # example functions ---------------------------------------------------------------------------
 
