@@ -28,8 +28,8 @@ from John K. Kruschke (2011). Doing Bayesian Data Analaysis: A Tutorial with R a
 \examples{
 x <- qnorm(seq(1e-04, .9999, length.out=1001))
 # x <- c(seq(0,.5,length.out=250), rep(.5, 480), seq(.5,1, length.out=250))
-hdi_95 <- hdi(x)
-hdi_50 <- hdi(x, .5)
+hdi_95 <- hdi(x, .95)
+hdi_50 <- hdi(x, .50)
 
 hist(x, br=50)
 abline(v=hdi_95, col="red")

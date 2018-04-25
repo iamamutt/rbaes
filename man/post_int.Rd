@@ -4,8 +4,8 @@
 \alias{post_int}
 \title{Posterior intervals}
 \usage{
-post_int(x, mid = "median", int = "ci", widths = c(0.5, 0.9), adj = 1.5,
-  rope = NULL, warn = FALSE)
+post_int(x, mid = c("median", "mean", "mode"), int = c("hdi", "ci"),
+  widths = c(0.5, 0.95), adj = 1.5, rope = NULL, warn = FALSE)
 }
 \arguments{
 \item{x}{Vector of numeric values. Typically a posterior sample.}
@@ -31,11 +31,13 @@ data.table
 Returns cutoff points from a posterior distribution
 }
 \examples{
-x <- rpois(1000, 15)
+x <- rpois(5000, 15)
+ints <- post_int(x)
 hist(x, br=50)
-abline(v=post_int(x), col="cyan")
+abline(v=ints$c, col="cyan")
+abline(v=ints[, c("l.wide", "r.wide")], col="magenta")
 
 post_int(x, "median")
 post_int(x, "mean")
-post_int(x, "mode", adj=2)
+post_int(x, "mode", adj=2, rope = c(14, 16))
 }

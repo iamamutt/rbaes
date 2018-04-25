@@ -1,11 +1,10 @@
-
 get_unit_attr <- function(x) {
-    adj <- attr(x, 'adj')
-    m <- attr(x, 'center')
-    s <- attr(x, 'scale')
+  adj <- attr(x, "adj")
+  m <- attr(x, "center")
+  s <- attr(x, "scale")
 
   if (any(is.null(c(adj, m, s)))) {
-    stop('could not find attributes from a unit_scale object')
+    stop("could not find attributes from a unit_scale object")
   }
 
   nlist(adj, m, s)
@@ -34,10 +33,10 @@ get_unit_attr <- function(x) {
 #' hist(y, br=50)
 #' mean(y) # <- 0.5
 #' sd(y) # <- 0.5
-unit_scale <- function(x, y=NULL, na.rm=TRUE) {
+unit_scale <- function(x, y = NULL, na.rm = TRUE) {
   if (is.null(y)) {
-    x_mean <- mean(x, na.rm=na.rm)
-    s_std <- 2 * sd(x, na.rm=na.rm)
+    x_mean <- mean(x, na.rm = na.rm)
+    s_std <- 2 * sd(x, na.rm = na.rm)
     x_adj <- 0.5
   } else {
     y_attr <- get_unit_attr(y)
@@ -48,9 +47,9 @@ unit_scale <- function(x, y=NULL, na.rm=TRUE) {
 
   z <- x_adj + ((x - x_mean) / s_std)
 
-  attr(z, 'center') <- x_mean
-  attr(z, 'scale') <- s_std
-  attr(z, 'adj') <- x_adj
+  attr(z, "center") <- x_mean
+  attr(z, "scale") <- s_std
+  attr(z, "adj") <- x_adj
   return(z)
 }
 
@@ -58,7 +57,7 @@ unit_scale <- function(x, y=NULL, na.rm=TRUE) {
 #'
 #' @param x object to be scaled back to original scale
 #' @param y optional object that has center, scale, and adj attributes to use on x. If y is not
-#'   used, these attributes will be taken from x.
+#' used, these attributes will be taken from x.
 #'
 #' @return numeric vector in original scale
 #' @export
@@ -67,7 +66,7 @@ unit_scale <- function(x, y=NULL, na.rm=TRUE) {
 #' z <- rnorm(10000, 100, 15)
 #' y <- unit_scale(z)
 #' rev_unit_scale(y)
-rev_unit_scale <- function(x, y=NULL, na.rm=FALSE) {
+rev_unit_scale <- function(x, y = NULL, na.rm = FALSE) {
   if (is.null(y)) {
     stats <- get_unit_attr(x)
   } else {

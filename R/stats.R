@@ -1,4 +1,3 @@
-
 #' Highest density interval
 #'
 #' This is a function that will calculate the highest density interval from a posterior sample.
@@ -10,50 +9,68 @@
 #' @param x Numeric vector of a distribution of data, typically a posterior sample
 #' @param prob Width of the interval from some distribution. Defaults to \code{0.95}.
 #' @param warn Option to turn off multiple sample warning message Must be in the range of \code{[0,
-#'   1]}.
+#' 1]}.
 #' @return Numeric range
 #' @export
 #' @examples
 #' x <- qnorm(seq(1e-04, .9999, length.out=1001))
 #' # x <- c(seq(0,.5,length.out=250), rep(.5, 480), seq(.5,1, length.out=250))
-#' hdi_95 <- hdi(x)
-#' hdi_50 <- hdi(x, .5)
+#' hdi_95 <- hdi(x, .95)
+#' hdi_50 <- hdi(x, .50)
 #'
 #' hist(x, br=50)
 #' abline(v=hdi_95, col="red")
 #' abline(v=hdi_50, col="green")
 hdi <- function(x, prob = 0.95, warn = TRUE) {
-  sorted_x <- sort(x)
-  x_size <- length(sorted_x)
-  window_size <- floor(prob * length(sorted_x))
-  scan_index <- 1:(x_size - window_size)
+  len <- length(x)
 
-  # vectorized difference between edges of cumulative distribution based on scan_length
-  window_width_diff <- sorted_x[scan_index + window_size] - sorted_x[scan_index]
-
-  # find minimum of width differences, check for multiple minima
-  candidates <- which(window_width_diff == min(window_width_diff))
-  n_c <- length(candidates)
-  if (warn && n_c > 1) {
-    warning(simpleWarning(paste0("Multiple candidate thresholds found for HDI,",
-                                 "choosing the middle of possible limits.")))
+  if (len < 3) {
+    warning("length of `x` < 3.", " Returning NAs")
+    return(c(NA_integer_, NA_integer_))
   }
 
-  # if more than one minimum, get average index
-  if (length(candidates) > 1) {
-    get_diff <- c(1, candidates[2:n_c] - candidates[1:(n_c - 1)])
-    if (any(get_diff != 1)) {
-      stop_i <- which(get_diff != 1) - 1
-      candidates <- candidates[1:stop_i[1]]
+  x_sort <- sort(x)
+  window_size <- as.integer(floor(prob * length(x_sort)))
+
+  if (window_size < 3) {
+    warning("window_size < 3.", " `prob` is too small.", " Returning NAs")
+    return(c(NA_integer_, NA_integer_))
+  }
+
+  lower <- seq_len(len - window_size)
+  upper <- window_size + lower
+
+  # vectorized difference between edges of cumulative distribution based on
+  # scan_length. Values are arranged from left to right scanning.
+  window_width_diff <- x_sort[upper] - x_sort[lower]
+
+  if (warn) {
+    # find minimum of width differences, check for multiple minima
+    min_i <- which(window_width_diff == min(window_width_diff))
+    n_candies <- length(min_i)
+
+    if (n_candies > 1) {
+      warning(
+        "Multiple candidate thresholds found for HDI.",
+        " Choosing the middle of possible limits.")
+      # if more than one minimum, get average index
+      get_diff <- c(1, min_i[2:n_candies] - min_i[1:(n_candies - 1)])
+      if (any(get_diff != 1)) {
+        stop_i <- which(get_diff != 1) - 1
+        min_i <- min_i[1:stop_i[1]]
+      }
+      min_i <- floor(mean(min_i))
     }
-    min_i <- floor(mean(candidates))
-  } else min_i <- candidates
+  } else {
+    min_i <- which.min(window_width_diff)
+  }
 
   # get values based on minimum
-  hdi_min <- sorted_x[min_i]
-  hdi_max <- sorted_x[min_i + window_size]
-  hdi_vals <- c(hdi_min, hdi_max)
-  return(hdi_vals)
+  c(x_sort[min_i], x_sort[upper[min_i]])
+}
+
+prop_in_range <- function(x, lower, upper) {
+  sum(x > lower & x < upper) / length(x)
 }
 
 #' Posterior intervals
@@ -63,107 +80,111 @@ hdi <- function(x, prob = 0.95, warn = TRUE) {
 #'
 #' @param x Vector of numeric values. Typically a posterior sample.
 #' @param mid Central tendency estimator. Defaults to \code{"median"}. Other options include
-#'   \code{c("mean", "mode")}.
+#' \code{c("mean", "mode")}.
 #' @param widths interval widths
 #' @param adj Bandwidth adjustment used only with the \code{"mode"} estimator. See \link{dmode}.
 #' @param rope Region of practical equivalence. Check how much of the distribution is within rope
-#'   value.
+#' value.
 #' @param warn Turn off warning for flat intervals found (multiple possible values)
 #' @param int interval type, either "hdi" or "ci"
 #'
 #' @examples
-#' x <- rpois(1000, 15)
+#' x <- rpois(5000, 15)
+#' ints <- post_int(x)
 #' hist(x, br=50)
-#' abline(v=post_int(x), col="cyan")
+#' abline(v=ints$c, col="cyan")
+#' abline(v=ints[, c("l.wide", "r.wide")], col="magenta")
 #'
 #' post_int(x, "median")
 #' post_int(x, "mean")
-#' post_int(x, "mode", adj=2)
+#' post_int(x, "mode", adj=2, rope = c(14, 16))
 #' @export
-post_int <- function(
-  x,
-  mid = "median",
-  int = "ci",
-  widths = c(.5, .90),
-  adj = 1.5,
-  rope = NULL,
-  warn = FALSE)
-{
-  if (mid == 'mean') {
-    m <- mean(x)
-    s <- sd(x)
-  } else if (mid == 'median') {
-    m <- median(x)
-    s <- mad(x)
-  } else if (mid == 'mode') {
-    m <- dmode(x, adjust = adj)
-    s <- mad(x)
-  } else {
-    stop(sprintf('"%s" is not a measure of central tendency', mid))
+post_int <- function(x, mid = c("median", "mean", "mode"),
+                     int = c("hdi", "ci"), widths = c(.50, .95),
+                     adj = 1.5, rope = NULL, warn = FALSE) {
+  if (!is.vector(x)) {
+    stop("`x` must be a vector.")
   }
+  mid <- match.arg(mid)
+  int <- match.arg(int)
 
-  if (int == 'ci') {
-    fx <- function(x, p, w = NULL) {
-      rstantools::posterior_interval(
-        object = as.matrix(x), prob = p)
-    }
-  } else if (int == 'hdi') {
-    fx <- function(x, p, w) {
-      hdi(x = x, prob = p, warn = w)
-    }
-  } else {
-    stop('unknown interval method')
-  }
+  center <- NA_real_
+  scale <- NA_real_
 
-  s_int <- sum(x > m - s & x < m + s) / length(x)
-  central <- data.table::data.table(
-    interval = c(0, s_int, s_int),
-    side = c('c', 'l', 'r'),
-    type = c('mid', 'std', 'std'),
-    y = c(m, m - s, m + s)
+  # measure of central tendency
+  switch(mid,
+    "mean" = {
+      center <- mean(x)
+      scale <- sd(x)
+    },
+    "median" = {
+      center <- median(x)
+      scale <- mad(x)
+    },
+    "mode" = {
+      center <- dmode(x, adjust = adj)
+      scale <- mad(x)
+    },
+    NULL)
+
+  # interval function as an unevaluated function call
+  int_fun <- switch(
+    int,
+    "ci" = {
+      match.call(
+        posterior_interval,
+        call("posterior_interval",
+          object = quote(as.matrix(x)), prob = quote(w)))
+    },
+    "hdi" = {
+      match.call(hdi, call("hdi",
+        x = quote(x),
+        prob = quote(w), warn = warn))
+    },
+    NULL
   )
 
-  intervals <- data.table::data.table(
-    widths,
-    do.call(
-    rbind, lapply(seq_along(widths), function(w) {
-    fx(x, widths[w], warn)
-  })))
+  # mass within 1 sd range
+  area_sd <- prop_in_range(x, center - scale, center + scale)
 
-  names(intervals) <- c('interval', 'l', 'r')
+  # width identifiers
+  widths <- sort(widths)
+  width_ids <- sprintf("%.0f", widths * 100)
+  width_ids[which.max(widths)] <- "wide"
 
-  intervals <- data.table::melt(
-    intervals, id.vars = 'interval',
-    variable.name = 'side',
-    value.name = 'y')
+  # left/right values for each width
+  intervals <- data.table::rbindlist(
+    Map(
+      function(w, i) {
+        ints <- structure(Reduce(cbind, eval(int_fun)),
+          dimnames = list(NULL, c("l", "r")))
+        data.table::data.table(interval = i, ints)
+      },
+      c(widths, area_sd),
+      c(width_ids, "sd"))
+  )
 
-  intervals$type <- int
+  # reshape to multivariate format
+  intervals <- intervals %>%
+    .[order(-interval), central := mid] %>%
+    data.table::dcast(central ~ interval,
+      value.var = c("l", "r"),
+      sep = ".") %>%
+    .[, c := center] %>%
+    set_col_order(c("central", "c", "l.sd", "l.wide", "r.sd", "r.wide"))
 
-  data.table::setcolorder(
-    intervals,
-    c('interval', 'side', 'type', 'y'))
-
+  # get rope
   if (!is.null(rope)) {
-    if (length(rope) != 2)
+    if (length(rope) != 2) {
       stop("ROPE must be a lower and upper value")
+    }
     rope <- sort(rope)
-    rope_int <- sum(x > rope[1] & x < rope[2]) / length(x)
-    rope_p <- data.table::data.table(
-      interval = c(rope_int, rope_int),
-      side = c('l', 'r'),
-      type = 'rope',
-      y = rope)
-
-  } else {
-    rope_p <- NULL
+    rope_mass <- prop_in_range(x, rope[1], rope[2])
+    intervals[, `:=`(l.rope = rope[1], r.rope = rope[2], rope = rope_mass)]
   }
 
-  out <- rbind(central, intervals, rope_p)
-  out <- out[order(interval, type, side, y)]
-
-  return(as.data.frame(out))
+  as.data.frame(intervals)
 }
-
 
 #' Mode from counting frequency
 #'
@@ -197,8 +218,8 @@ cmode <- function(x) {
 #' abline(v = mean(x), col = "blue")
 #' @export
 dmode <- function(x, adjust = 1.5) {
-  cut <- hdi(x, 0.99)
-  d <- density(x, n = 1000, bw = "SJ", from = cut[1], to = cut[2], adjust = adjust)
+  x <- trim_ends(x, 0.05)
+  d <- density(x, n = 1000, bw = "SJ", adjust = adjust)
   d$x[which.max(d$y)]
 }
 
@@ -226,9 +247,62 @@ pooled_sd <- function(sd_vec, n_vec) {
     stop("SD vec must equal length of N vec")
   }
   if (nrow(n_vec) == 1 & nrow(sd_vec) > 1) {
-    n_vec <- matrix(rep(n_vec, each = nrow(sd_vec)),
-                    nrow = nrow(sd_vec))
+    n_vec <- matrix(rep(n_vec, each = nrow(sd_vec)), nrow = nrow(sd_vec))
   }
-  sqrt(rowSums((n_vec - 1) * sd_vec ^ 2) /
-         (rowSums(n_vec) - ncol(n_vec)))
+  sqrt(rowSums((n_vec - 1) * sd_vec^2) / (rowSums(n_vec) - ncol(n_vec)))
+}
+
+#' Trim extreme values at each end of a vector.
+#'
+#' @param x A [numeric] vector
+#' @param trim Proportion of vector length to trim. Must be between 0 and 1.
+#' E.g., a value 0.05 (default) trims 2.5\% off each end of a sorted vector.
+#' @param na.rm omit `NA` values. May result in different size vector.
+#'
+#' @return A [numeric] vector in the original order of `x`, but with trimmed
+#' values as `NA` if `na.rm=TRUE` or with these values removed if `FALSE`
+#' (which will result in a different sized vector from the input).
+#' @export
+#'
+#' @examples
+#' x <- rgamma(10000, 1, 1)
+#' range(x)
+#' length(x)     # <- 10000
+#' sum(is.na(x)) # <- 0
+#'
+#' t <- trim_ends(x, trim = 0.1)
+#' range(t)
+#' length(t)     # <- 9000
+#' sum(is.na(t)) # <- 0
+#'
+#' t <- trim_ends(x, 0.1, na.rm = FALSE)
+#' range(t, na.rm = TRUE)
+#' length(t)     # <- 10000
+#' sum(is.na(t)) # <- 1000
+trim_ends <- function(x, trim = 0.05, na.rm = TRUE) {
+  if (trim < 0 | trim > 1) {
+    stop("trim amount must be between 0 and 1")
+  }
+
+  which_na <- is.na(x)
+
+  len <- sum(!which_na)
+
+  trim_size <- as.integer(floor((len * trim) / 2))
+
+  if (trim_size > 0L) {
+    real_vals <- which(!which_na)
+    sort_order_real <- order(x[real_vals], na.last = TRUE)
+    real_vals <- real_vals[sort_order_real]
+    trim_index <- seq_len(trim_size)
+    which_na[real_vals[trim_index]] <- TRUE
+    which_na[real_vals[len - trim_index + 1]] <- TRUE
+  }
+
+  if (!na.rm) {
+    x[which_na] <- NA
+    return(x)
+  }
+
+  x[!which_na]
 }

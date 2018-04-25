@@ -1,45 +1,62 @@
-#' Posterior predict data.table
+#' Merge posterior predictions with data
 #'
-#' @param object stanfit object
+#' @param stanreg
 #' @param newdata data to use for prediction
-#' @param append add data columns to predictions
-#' @param fn  posterior_predict or posterior_linpred
+#' @param post_fun
+#' @param var.sample
+#' @param var.rows
+#' @param var.yhat
 #' @param ... options passed to rstanarm::posterior_predict
 #'
-#' @return Posterior prediction matrix as a data.table, merging newdata if available.
+#' @return [data.table::data.table]
 #' @export
 #'
 #' @examples
 #' #TODO:
-post_pred_dtable <-
-  function(object,
-           newdata = NULL,
-           append = TRUE,
-           fn = rstanarm::posterior_predict,
-           ...) {
-    pred <- fn(object, newdata = newdata, ...)
-    pred <- data.table::as.data.table(pred)
-    pred[, .sample := 1:.N]
-    pred <-
-      melt.data.table(
-        pred,
-        id.vars = ".sample",
-        variable.name = ".obs",
-        value.name = ".y"
-      )
-    pred[, .obs := as.integer(.obs)]
-    pred[, .sample := as.integer(.sample)]
-    if (!is.null(newdata) & append) {
-      if (!is.data.table(newdata)) {
-        dt <- as.data.table(newdata)
-      } else {
-        dt <- data.table::copy(newdata)
-      }
-      dt[, .obs := 1:.N]
-      pred <- merge(dt, pred, by = ".obs")
-    }
-    return(pred)
+merge_data_and_posterior <- function(stanreg, newdata = NULL,
+                                     post_fun = rstanarm::posterior_predict,
+                                     var.sample = ".sample", var.rows = ".obs",
+                                     var.yhat = ".y", ...) {
+  pred <- post_fun(stanreg, newdata = newdata, ...)
+  pred <- data.table::as.data.table(pred)
+  pred[, .__mcmc_sample := 1:.N]
+  pred <- melt(pred,
+    id.vars = ".__mcmc_sample",
+    variable.name = ".__data_obs", value.name = ".__post_pred")
+  pred[, .__data_obs := as.integer(.__data_obs)]
+  pred[, .__mcmc_sample := as.integer(.__mcmc_sample)]
+
+  if (is.null(newdata)) {
+    newdata <- stanreg$data
   }
+
+  if (data.table::is.data.table(newdata)) {
+    newdata <- data.table::copy(newdata)
+  } else {
+    newdata <- data.table::as.data.table(newdata)
+  }
+
+  newdata[, .__data_obs := 1:.N]
+  pred <- merge(newdata, pred, by = ".__data_obs", all.y = TRUE)
+  default_vars <- c(".__mcmc_sample", ".__data_obs", ".__post_pred")
+  rename_vars <- c(var.sample, var.rows, var.yhat)
+  which_exist <- rename_vars %in% names(pred)
+
+  if (any(which_exist)) {
+    these_exist <- paste0(rename_vars[which_exist], collapse = ", ")
+    warning(
+      "New names: ", these_exist, " already exist. ",
+      "Keeping default names.")
+  }
+
+  if (!all(which_exist)) {
+    data.table::setnames(
+      pred, default_vars[!which_exist],
+      rename_vars[!which_exist])
+  }
+
+  pred
+}
 
 #' Stan example model
 #'
@@ -52,12 +69,8 @@ post_pred_dtable <-
 #' @examples
 #' stanfit <- example_stanreg()
 example_stanreg <- function(iter = 1000, chains = 2) {
-  rstanarm::stan_glmer(
-    log_radon ~ floor + log_uranium + (1 | county),
-    data = rstanarm::radon,
-    iter = iter,
-    chains = chains
-  )
+  rstanarm::stan_glmer(log_radon ~ floor + log_uranium + (1 | county),
+    data = rstanarm::radon, iter = iter, chains = chains)
 }
 
 #' Example stan model and data
@@ -71,19 +84,20 @@ example_stanreg <- function(iter = 1000, chains = 2) {
 #'
 #' @examples
 #' stan_ex <- example_stan(seed=19851905)
-example_stan <- function(n=30, seed=NULL, data_only=FALSE) {
-  if (!is.null(seed))
+example_stan <- function(n = 30, seed = NULL, data_only = FALSE) {
+  if (!is.null(seed)) {
     set.seed(seed)
+  }
 
   y1 <- rnorm(n, 75, 15)
   y2 <- rnorm(n, 100, 10)
 
-  data <- list(y = c(y1, y2), x = rep(c(0,1), each=n), n = n*2)
+  data <- list(y = c(y1, y2), x = rep(c(0, 1), each = n), n = n * 2)
   pars <- c("Beta", "Sigma", "log_lik")
-  inits <- function()
+  inits <- function() {
     list(Beta = c(75, 25), Sigma = 12.75)
-  model <-
-    "
+  }
+  model <- "
     data {
       int<lower=1> n;
       vector[n]    y;
@@ -105,31 +119,22 @@ example_stan <- function(n=30, seed=NULL, data_only=FALSE) {
     "
 
   stan_stuff <- list(
-    data = data,
-    pars = pars,
-    inits = inits,
-    model = model,
-    fit = list()
-  )
+    data = data, pars = pars, inits = inits,
+    model = model, fit = list())
 
   if (data_only) {
     return(stan_stuff)
   } else {
-    if (!requireNamespace('rstan', quietly = TRUE)) {
-      stop('cannot find package rstan')
+    if (!requireNamespace("rstan", quietly = TRUE)) {
+      stop("cannot find package rstan")
     }
 
     stan_stuff$fit <- rstan::stan(
-      model_code = model,
-      model_name = "example",
-      data = data,
-      iter = 2100,
-      chains = 3,
-      pars = pars,
-      init = inits,
-      verbose = FALSE,
-      open_progress = -1,
-      control = list(adapt_delta=0.8))
+      model_code = model, model_name = "example",
+      data = data, iter = 2100, chains = 3, pars = pars,
+      init = inits, verbose = FALSE, open_progress = -1,
+      control = list(adapt_delta = 0.8)
+    )
 
     return(stan_stuff)
   }
@@ -164,11 +169,19 @@ print_rstanarm <- function(stanreg, header = "Stan model summary") {
 #' @examples
 #'
 n_mcmc_samples <- function(object) {
-  if ('stanreg' %in% class(object)) {
+  if ("stanreg" %in% class(object)) {
     n_post_draws(object)
-  } else if ('stanfit' %in% class(object)) {
-    sum(object@sim$n_save - object@sim$warmup2)
   } else {
-    stop('object is not some kind of stan fitted model')
+    if ("stanfit" %in% class(object)) {
+      sum(object@sim$n_save - object@sim$warmup2)
+    } else {
+      stop("object is not some kind of stan fitted model")
+    }
   }
+}
+
+set_col_order <- function(x, first_names) {
+  data.table::setcolorder(x, c(first_names, names(x)[!names(x) %chin%
+    first_names]))
+  invisible(x)
 }
