@@ -21,7 +21,8 @@ ss_two_sample <- function(n1 = NULL, n2 = NULL, min_n = 30,
   n1_l <- length(n1)
   n2_l <- length(n2)
 
-  # if number of sample size attempts is not equal for both groups then repeat for the one with less tries
+  # if number of sample size attempts is not equal for both groups then repeat
+  # for the one with less tries
   if (n1_l != n2_l) {
     if (n1_l < n2_l) {
       n1 <- c(n1, rep(rev(n1), length.out = n2_l)[(n1_l + 1):n2_l])
@@ -48,11 +49,15 @@ add_test_item <- function(test_name, passed, check = FALSE,
   }
 
   if (!is.logical(passed)) {
-    stop("passed must be a logical value indicating if the test passed or not")
+    stop(
+      "passed must be a logical value indicating ",
+      "if the test passed or not")
   }
 
   if (!is.logical(check)) {
-    stop("check must be a logical value indicating if the test should be evaluated for stopping")
+    stop(
+      "check must be a logical value indicating ",
+      "if the test should be evaluated for stopping")
   }
 
   slot <- data.table(
@@ -330,14 +335,76 @@ print_power_status <- function(record, filename = NULL) {
   return(invisible())
 }
 
+
+
 # power tests ---------------------------------------------------------------------------------
-
-
-test_interval <- function(x, null_value = 0,
-                          type = c("!", "l>", "r<", "l>=", "r<=", "==")) {
-  if (is.vector(x)) {
-    x <- matrix(x, ncol = 2)
+test_interval_type <- function(op, op_list = FALSE) {
+  if (op_list) {
+    return(c(
+      "!", "!=", "neq", "l>", "lgt", "l>=", "lgeq",
+      "l<", "llt", "l<=", "lleq", "r>", "rgt", "r>=",
+      "rgeq", "r<", "rlt", "r<=", "rleq", "==", "eq"))
   }
+
+  # not equal to
+  if (op %in% c("!", "!=", "neq")) {
+    return("neq")
+  }
+
+  # left greater than
+  if (op %in% c("l>", "lgt")) {
+    return("lgt")
+  }
+
+  # left greater than or equal to
+  if (op %in% c("l>=", "lgeq")) {
+    return("lgeq")
+  }
+
+  # left less than
+  if (op %in% c("l<", "llt")) {
+    return("llt")
+  }
+
+  # left less than or equal to
+  if (op %in% c("l<=", "lleq")) {
+    return("lleq")
+  }
+
+  # right greater than
+  if (op %in% c("r>", "rgt")) {
+    return("rgt")
+  }
+
+  # right greater than or equal to
+  if (op %in% c("r>=", "rgeq")) {
+    return("rgeq")
+  }
+
+  # right less than
+  if (op %in% c("r<", "rlt")) {
+    return("rlt")
+  }
+
+  # right less than or equal to
+  if (op %in% c("r<=", "rleq")) {
+    return("rleq")
+  }
+
+  # is equal to
+  if (op %in% c("==", "eq")) {
+    return("eq")
+  }
+
+  stop("unknown interval test operation: ", op)
+}
+
+test_interval <- function(x, type, null = 0) {
+  t <- test_interval_type(type)
+
+  # if (is.vector(x)) {
+  # x <- matrix(x, ncol = 2)
+  # }
 
   # make sure lower and upper are sorted
   if (!all(apply(
@@ -351,60 +418,44 @@ test_interval <- function(x, null_value = 0,
 
   lhs <- x[, 1]
   rhs <- x[, 2]
-  ttype <- type[1]
 
-  if (ttype %in% c("!", "!=", "neq")) {
-    test <- rhs < null_value | lhs > null_value
-  } else {
-    if (ttype %in% c("l>", "lgt")) {
-      test <- lhs > null_value
-    } else {
-      if (ttype %in% c("l>=", "lgeq")) {
-        test <- lhs >= null_value
-      } else {
-        if (ttype %in% c("l<", "llt")) {
-          test <- lhs < null_value
-        } else {
-          if (ttype %in% c("l<=", "lleq")) {
-            test <- lhs <= null_value
-          } else {
-            if (ttype %in% c("r>", "rgt")) {
-              test <- rhs > null_value
-            } else {
-              if (ttype %in% c("r>=", "rgeq")) {
-                test <- rhs >= null_value
-              } else {
-                if (ttype %in% c("r<", "rlt")) {
-                  test <- rhs < null_value
-                } else {
-                  if (ttype %in% c("r<=", "rleq")) {
-                    test <- rhs <= null_value
-                  } else {
-                    if (ttype %in% c("==", "eq")) {
-                      # ROPE
-                      if (length(null_value) != 2) {
-                        stop("null_value must be a lower and upper region for this option")
-                      }
-                      test <- lhs >=
-                        null_value[1] & rhs <=
-                        null_value[2]
-                    } else {
-                      stop(
-                        "unknown interval test type: ",
-                        ttype)
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+  switch(t,
+    "neq" = {
+      rhs < null | lhs > null
+    },
+    "lgt" = {
+      lhs > null
+    },
+    "lgeq" = {
+      lhs >= null
+    },
+    "llt" = {
+      lhs < null
+    },
+    "lleq" = {
+      lhs <= null
+    },
+    "rgt" = {
+      rhs > null
+    },
+    "rgeq" = {
+      rhs >= null
+    },
+    "rlt" = {
+      rhs < null
+    },
+    "rleq" = {
+      rhs <= null
+    },
+    "eq" = {
+      # ROPE
+      if (length(null) != 2) {
+        stop("null_value must be a lower and upper region for this option")
       }
-    }
-  }
-  return(test)
+      lhs >= null[1] & rhs <= null[2]
+    },
+    NULL)
 }
-
 
 # stats ---------------------------------------------------------------------------------------
 

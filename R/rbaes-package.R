@@ -9,7 +9,6 @@
 #' @import ggplot2
 #' @importFrom rstantools posterior_interval
 #' @importFrom magrittr %>%
-#' @useDynLib rbaes, .registration = TRUE
 #' @docType package
 #' @name rbaes
 NULL

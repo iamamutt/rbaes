@@ -1,11 +1,11 @@
 test_geom_post <- function() {
   x <- data.frame(
-    cond = rep(letters[1:4], each = 2500), data = rnorm(10000),
-    grp = rep(LETTERS[1:2], each = 5000))
+    cond = rep(letters[1:4], each = 2500),
+    data = rnorm(10000), grp = rep(LETTERS[1:2], each = 5000))
 
   ggplot(x) + geom_posterior(aes(y = grp, x = data, color = cond, fill = grp),
-                             interval_width = 0.95, interval_type = "hdi",
-                             center_stat = "median") + theme_bw()
+    interval_width = 0.95, interval_type = "hdi",
+    center_stat = "median") + theme_bw()
 }
 
 #' Like position_dodge but vertically
@@ -20,8 +20,8 @@ test_geom_post <- function() {
 #' geom_point(aes(group=myGroup), position_spread(height = 0.5))
 position_spread <- function(height = NULL, preserve = c("total", "single")) {
   ggproto(NULL, PositionSpread,
-          height = height,
-          preserve = match.arg(preserve))
+    height = height,
+    preserve = match.arg(preserve))
 }
 
 PositionSpread <- ggproto(
@@ -32,9 +32,9 @@ PositionSpread <- ggproto(
   preserve = "total",
   setup_params = function(self, data) {
     if (is.null(data$ymin) && is.null(data$ymax) &&
-        is.null(self$height)) {
+      is.null(self$height)) {
       warning("Height not defined. Set with `position_spread(height = ?)`",
-              call. = FALSE)
+        call. = FALSE)
     }
 
     if (identical(self$preserve, "total")) {
@@ -47,8 +47,8 @@ PositionSpread <- ggproto(
   },
   compute_panel = function(data, params, scales) {
     collidev(data, params$height,
-             name = "position_spread",
-             strategy = pos_spread, n = params$n, check.width = FALSE)
+      name = "position_spread",
+      strategy = pos_spread, n = params$n, check.width = FALSE)
   }
 )
 
@@ -75,9 +75,9 @@ StatPosteriorDensity <- ggproto(
   required_aes = c("x", "y"),
   non_missing_aes = "weight",
   compute_group = function(data, scales, height = NULL, bw = "nrd0",
-                           adjust = 1, kernel = "gaussian",
-                           center_stat = NULL, interval_width = NULL,
-                           interval_type = "hdi", na.rm = FALSE) {
+                             adjust = 1, kernel = "gaussian",
+                             center_stat = NULL, interval_width = NULL,
+                             interval_type = "hdi", na.rm = FALSE) {
     if (nrow(data) < 3) {
       return(data.frame())
     }
@@ -106,9 +106,9 @@ StatPosteriorDensity <- ggproto(
     dens
   },
   compute_panel = function(self, data, scales, height = NULL, bw = "nrd0",
-                           adjust = 1, kernel = "gaussian",
-                           center_stat = NULL, interval_width = NULL,
-                           interval_type = "hdi", na.rm = FALSE) {
+                             adjust = 1, kernel = "gaussian",
+                             center_stat = NULL, interval_width = NULL,
+                             interval_type = "hdi", na.rm = FALSE) {
     data <- ggproto_parent(
       Stat, self
     )$compute_panel(
@@ -165,7 +165,7 @@ GeomPosterior <- ggproto(
 
     # ymin, ymax, xmin, and xmax define the bounding rectangle for each group
     plyr::ddply(data, "group", transform,
-                ymin = y - height / 2, ymax = y + height / 2)
+      ymin = y - height / 2, ymax = y + height / 2)
   },
   draw_group = function(self, data, ...) {
     interp_dens_y <- function(xdens, ymin, ymax, x) {
@@ -198,7 +198,7 @@ GeomPosterior <- ggproto(
         rep(1, nrow(post_vline)),
         setdiff(names(post_trace), c("x", "y", "group")),
         drop = FALSE
-        ]
+      ]
       aesthetics$alpha <- rep(1, nrow(post_vline))
       post_vline <- cbind(post_vline, aesthetics)
       post_vline$colour <- "#FFFFFF"
@@ -330,14 +330,14 @@ calc_bw <- function(x, bw) {
   if (is.character(bw)) {
     if (length(x) < 2) {
       stop("need at least 2 points to select a bandwidth automatically",
-           call. = FALSE)
+        call. = FALSE)
     }
     bw <- switch(tolower(bw), nrd0 = stats::bw.nrd0(x),
-                 nrd = stats::bw.nrd(x), ucv = stats::bw.ucv(x),
-                 bcv = stats::bw.bcv(x), sj = ,
-                 `sj-ste` = stats::bw.SJ(x, method = "ste"),
-                 `sj-dpi` = stats::bw.SJ(x, method = "dpi"),
-                 stop("unknown bandwidth rule"))
+    nrd = stats::bw.nrd(x), ucv = stats::bw.ucv(x),
+    bcv = stats::bw.bcv(x), sj = ,
+    `sj-ste` = stats::bw.SJ(x, method = "ste"),
+    `sj-dpi` = stats::bw.SJ(x, method = "dpi"),
+    stop("unknown bandwidth rule"))
   }
   bw
 }
@@ -352,15 +352,15 @@ compute_density <- function(x, w, from, to, bw = "nrd0", adjust = 1,
   # if less than 2 points return data frame of NAs and a warning
   if (nx < 2) {
     warning("Groups with fewer than two data points have been dropped.",
-            call. = FALSE)
+      call. = FALSE)
     return(data.frame(
       x = NA, density = NA, scaled = NA,
       count = NA, n = NA))
   }
 
   dens <- stats::density(x,
-                         weights = w, bw = bw, adjust = adjust,
-                         kernel = kernel, n = n, from = from, to = to)
+    weights = w, bw = bw, adjust = adjust,
+    kernel = kernel, n = n, from = from, to = to)
 
   data.frame(
     x = dens$x, density = dens$y, scaled = dens$y /
@@ -372,7 +372,8 @@ make_post_int_frame <- function(x, center_stat = NULL, interval_width = NULL,
                                 interval_type = "hdi") {
   interval_frame <- data.frame(
     vlinectr = NA_real_, segxmins = NA_real_, segxmaxs = NA_real_,
-    segxminc = NA_real_, segxmaxc = NA_real_)
+    segxminc = NA_real_, segxmaxc = NA_real_
+  )
 
   no_central_line <- is.null(center_stat)
   no_interval_lines <- is.null(interval_width)
@@ -416,8 +417,8 @@ trace_violin <- function(data, xmin = NULL, xmax = NULL) {
 
   # Find the points for the line to go all the way around
   data <- transform(data,
-                    yminv = y - panelheight * (y - ymin),
-                    ymaxv = y + panelheight * (ymax - y))
+    yminv = y - panelheight * (y - ymin),
+    ymaxv = y + panelheight * (ymax - y))
 
   # Make sure it's sorted properly to draw the outline
   data <- rbind(

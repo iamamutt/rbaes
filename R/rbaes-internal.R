@@ -151,6 +151,24 @@ pp_cdata <- function(stanreg, cdata, row_stat = median, ...) {
   return(pp)
 }
 
+set_col_order <- function(x, first_names) {
+  data.table::setcolorder(x, c(first_names, names(x)[!names(x) %chin%
+    first_names]))
+  invisible(x)
+}
+
+get_unit_attr <- function(x) {
+  adj <- attr(x, "adj")
+  m <- attr(x, "center")
+  s <- attr(x, "scale")
+
+  if (any(is.null(c(adj, m, s)))) {
+    stop("could not find attributes from a unit_scale object")
+  }
+
+  nlist(adj, m, s)
+}
+
 .Random.seed <- c(
   403L,
   10L,

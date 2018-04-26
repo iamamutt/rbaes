@@ -87,26 +87,6 @@ loo_table <- function(loo_list, stat = c("looic", "elpd_loo", "p_loo")) {
   return(out_table)
 }
 
-#' Get model data from stanreg
-#'
-#' @param stanreg object of class stanreg
-#' @param get_y logical value. Include the output columns?
-#'
-#' @return data.table
-#' @export
-#' @examples
-#' stanreg <- example_stanreg()
-#' model_data <- stanreg_dtbl(stanreg, TRUE)
-stanreg_dtbl <- function(stanreg, get_y = TRUE) {
-  dt <- copy(as.data.table(stanreg$glmod$fr))
-
-  if (!get_y) {
-    y <- sub("~", "", deparse(stanreg$formula[1:2]))
-    dt[, eval(y) := NULL]
-  }
-
-  return(dt)
-}
 
 #' get data for contrasts
 #'
@@ -133,7 +113,7 @@ stanreg_dtbl <- function(stanreg, get_y = TRUE) {
 #'
 #' @examples
 #' stanreg <- example_stanreg()
-#' model_data <- stanreg_dtbl(stanreg) # compare below to model data
+#' model_data <- stanreg_dtbl(stanreg, TRUE) # compare below to model data
 #'
 #' contrast_data(stanreg)
 #'
@@ -150,7 +130,7 @@ contrast_data <- function(stanreg, new_group = NULL, marginalize_factors = NULL,
                           margin_ignore = NULL, set_numerics = NULL,
                           subset_expression = NULL) {
   # data from rstanarm model
-  dt <- stanreg_dtbl(stanreg, get_y = FALSE)
+  dt <- stanreg_dtbl(stanreg, model_frame = TRUE, get_y = FALSE)
 
   # data classes
   dt_classes <- sapply(dt, class)
