@@ -7,7 +7,7 @@
 *.Rproj
 *.Rproj.user
 exec/*.rda
-./junk
+.junk
 rbaes.7z
 Read-and-delete-me
 src/*.dll
