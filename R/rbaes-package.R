@@ -1,14 +1,28 @@
 #' R Bayesian Analysis and Estimation Stuff
 #'
-#' A set of functions and routines for Bayesian data analysis
+#' A set of functions and routines for Bayesian data analysis.
 #'
-#' @section Info: See \code{library(help="rbaes")} for help. \cr \cr Below are
-#' some useful links I can click on instead of google searching them: \cr \cr
-#' \url{http://mc-stan.org/}
+#' Mostly wrappers and stuff, or simplifying some operations.
+#'
+#' @seealso [rstan::stan], [rstanarm::stan_glmer]
+#'
+#' See `help(package = "rbaes")` for a list of functions.
+#'
+#' View vignettes with `browseVignettes(package ="rbaes")`.
+#'
+#' Below are some useful links:
+#'
+#' - [http://mc-stan.org/]
+#'
 #' @import data.table
 #' @import ggplot2
 #' @importFrom rstantools posterior_interval
 #' @importFrom magrittr %>%
+#' @importFrom mejr nlist dtbl2list pairwise
 #' @docType package
-#' @name rbaes
+#' @name rbaes-package
 NULL
+
+#' @importFrom mejr pval_format
+#' @export
+mejr::pval_format

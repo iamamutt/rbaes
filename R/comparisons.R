@@ -43,7 +43,7 @@ loo_table <- function(loo_list, stat = c("looic", "elpd_loo", "p_loo")) {
   tbl_names <- c(
     toupper(paste(stat, "L")), toupper(paste(stat, "R")),
     toupper(paste(stat, "Diff.")), "SE DIFF.",
-    paste0("CI", names(loo_ci(1, 1, 2, p_alpha))))
+    paste0("CI ", names(loo_ci(1, 1, 2, p_alpha))))
 
   elpd_order <- ifelse(stat == "elpd_loo", TRUE, FALSE)
 
@@ -77,8 +77,8 @@ loo_table <- function(loo_list, stat = c("looic", "elpd_loo", "p_loo")) {
           se = loo_se, cil = loo_cint[1], ciu = loo_cint[2])
       )
       names(tbl) <- paste0(
-        "[", mod_names[m_order[1]], sig_ast,
-        mod_names[m_order[2]], "]")
+        mod_names[m_order[1]], sig_ast,
+        mod_names[m_order[2]])
       loo_comp[[p]] <- tbl
     }
   }

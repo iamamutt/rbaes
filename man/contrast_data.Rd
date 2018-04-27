@@ -39,7 +39,7 @@ get data for contrasts
 }
 \examples{
 stanreg <- example_stanreg()
-model_data <- stanreg_dtbl(stanreg) # compare below to model data
+model_data <- stanreg_dtbl(stanreg, TRUE) # compare below to model data
 
 contrast_data(stanreg)
 

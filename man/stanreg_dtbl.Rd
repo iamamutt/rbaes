@@ -4,10 +4,13 @@
 \alias{stanreg_dtbl}
 \title{Get model data from stanreg}
 \usage{
-stanreg_dtbl(stanreg, model_frame = TRUE, get_y = TRUE)
+stanreg_dtbl(stanreg, model_frame = FALSE, get_y = FALSE)
 }
 \arguments{
 \item{stanreg}{object of class stanreg}
+
+\item{model_frame}{If \code{TRUE}, then extract from \code{$glmod$fr}, else use
+\code{$data}.}
 
 \item{get_y}{logical value. Include the output columns?}
 }
@@ -19,5 +22,5 @@ Get model data from stanreg
 }
 \examples{
 stanreg <- example_stanreg()
-model_data <- stanreg_dtbl(stanreg, get_y = TRUE)
+model_data <- stanreg_dtbl(stanreg, TRUE, TRUE)
 }

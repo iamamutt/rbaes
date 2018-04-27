@@ -175,6 +175,9 @@ post_int <- function(x, mid = c("median", "mean", "mode"),
 
   # get rope
   if (!is.null(rope)) {
+    if (is.character(rope) && rope == "max") {
+        rope <- c(intervals$l.wide, intervals$r.wide)
+    }
     if (length(rope) != 2) {
       stop("ROPE must be a lower and upper value")
     }
@@ -306,3 +309,15 @@ trim_ends <- function(x, trim = 0.05, na.rm = TRUE) {
 
   x[!which_na]
 }
+
+#' @export
+apply_contrast <- function(contrast_coef, ...) {
+  if (dot_dot_len(...) != length(contrast_coef)) {
+    stop("Num. coefficients must equal num vectors.")
+  }
+  if (sum(contrast_coef) != 0) {
+    warning("Sum of coefficients not equal to zero.")
+  }
+  as.vector(cbind(...) %*% contrast_coef)
+}
+

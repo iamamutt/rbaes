@@ -9,7 +9,17 @@ merge_data_and_posterior(stanreg, newdata = NULL,
   var.rows = ".obs", var.yhat = ".y", ...)
 }
 \arguments{
+\item{stanreg}{x}
+
 \item{newdata}{data to use for prediction}
+
+\item{post_fun}{x}
+
+\item{var.sample}{x}
+
+\item{var.rows}{x}
+
+\item{var.yhat}{x}
 
 \item{...}{options passed to rstanarm::posterior_predict}
 }

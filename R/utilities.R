@@ -1,11 +1,11 @@
 #' Merge posterior predictions with data
 #'
-#' @param stanreg
+#' @param stanreg x
 #' @param newdata data to use for prediction
-#' @param post_fun
-#' @param var.sample
-#' @param var.rows
-#' @param var.yhat
+#' @param post_fun x
+#' @param var.sample x
+#' @param var.rows x
+#' @param var.yhat x
 #' @param ... options passed to rstanarm::posterior_predict
 #'
 #' @return [data.table::data.table]
@@ -299,3 +299,10 @@ stanreg_dtbl <- function(stanreg, model_frame = FALSE, get_y = FALSE) {
 
   dt
 }
+
+#' @export
+dot_dot_len <- function(...) {
+  length(match.call(expand.dots = TRUE)) - 1L
+}
+
+

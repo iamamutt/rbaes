@@ -1,8 +1,8 @@
 Package: rbaes
 Type: Package
 Title: R Bayesian Analysis and Estimation Stuff
-Version: 0.1.0.9000
-Date: 2018-04-12
+Version: 0.1.0.9001
+Date: 2018-04-26
 Authors@R:
     c(person(
         "Joseph M.", "Burling", ,
