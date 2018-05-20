@@ -30,5 +30,6 @@ merge_data_and_posterior(stanreg, newdata = NULL,
 Merge posterior predictions with data
 }
 \examples{
-#TODO:
+stanreg <- example_stanreg(500, 1)
+merge_data_and_posterior(stanreg)
 }

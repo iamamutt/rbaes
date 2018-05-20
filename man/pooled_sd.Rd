@@ -2,20 +2,18 @@
 % Please edit documentation in R/stats.R
 \name{pooled_sd}
 \alias{pooled_sd}
-\title{Pooled standard deviation}
+\title{Hedges G}
 \usage{
-pooled_sd(sd_vec, n_vec)
+pooled_sd(sd, n)
 }
 \arguments{
-\item{sd_vec}{numeric vector of standard deviations}
-
 \item{n_vec}{sample sizes corresponding to the standard deviations}
 }
 \value{
 numeric value
 }
 \description{
-Get pooled standard deviation from a vector of SDs and sample sizes
+Hedges G
 }
 \examples{
 pooled_sd(c(1, 5), c(100, 8))

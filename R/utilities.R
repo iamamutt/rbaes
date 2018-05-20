@@ -12,28 +12,30 @@
 #' @export
 #'
 #' @examples
-#' #TODO:
+#' stanreg <- example_stanreg(500, 1)
+#' merge_data_and_posterior(stanreg)
 merge_data_and_posterior <- function(stanreg, newdata = NULL,
                                      post_fun = rstanarm::posterior_predict,
                                      var.sample = ".sample", var.rows = ".obs",
                                      var.yhat = ".y", ...) {
-  pred <- post_fun(stanreg, newdata = newdata, ...)
-  pred <- data.table::as.data.table(pred)
-  pred[, .__mcmc_sample := 1:.N]
-  pred <- melt(pred,
-    id.vars = ".__mcmc_sample",
-    variable.name = ".__data_obs", value.name = ".__post_pred")
-  pred[, .__data_obs := as.integer(.__data_obs)]
-  pred[, .__mcmc_sample := as.integer(.__mcmc_sample)]
+  pred <- post_fun(stanreg, newdata = newdata, ...) %>%
+    as.data.table() %>%
+    .[, .__mcmc_sample := 1:.N] %>%
+    melt(
+      id.vars = ".__mcmc_sample", variable.name = ".__data_obs",
+      value.name = ".__post_pred") %>%
+    .[, .__data_obs := as.integer(.__data_obs)] %>%
+    .[, .__mcmc_sample := as.integer(.__mcmc_sample)] %>%
+    .[]
 
   if (is.null(newdata)) {
-    newdata <- stanreg_dtbl(stanreg, model_frame = FALSE)
-  }
-
-  if (data.table::is.data.table(newdata)) {
-    newdata <- data.table::copy(newdata)
+    newdata <- stanreg_dtbl(stanreg, model_frame = FALSE, get_y = TRUE)
   } else {
-    newdata <- data.table::as.data.table(newdata)
+    if (is.data.table(newdata)) {
+      newdata <- copy(newdata)
+    } else {
+      newdata <- as.data.table(newdata)
+    }
   }
 
   newdata[, .__data_obs := 1:.N]
@@ -50,11 +52,10 @@ merge_data_and_posterior <- function(stanreg, newdata = NULL,
   }
 
   if (!all(which_exist)) {
-    data.table::setnames(
-      pred, default_vars[!which_exist],
-      rename_vars[!which_exist])
+    setnames(pred, default_vars[!which_exist], rename_vars[!which_exist])
   }
 
+  set_col_order(pred, rename_vars)
   pred
 }
 
@@ -70,7 +71,7 @@ merge_data_and_posterior <- function(stanreg, newdata = NULL,
 #' stanfit <- example_stanreg()
 example_stanreg <- function(iter = 1000, chains = 2) {
   rstanarm::stan_glmer(log_radon ~ floor + log_uranium + (1 | county),
-    data = rstanarm::radon, iter = iter, chains = chains)
+                       data = rstanarm::radon, iter = iter, chains = chains)
 }
 
 #' Example stan model and data
@@ -274,6 +275,14 @@ stan_chol <- function(mat) {
   return(Lp)
 }
 
+stanreg_get_y <- function(stanreg) {
+  model_data <- as.data.table(stanreg$glmod$fr)
+  txt <- paste0(
+    "as.data.table(",
+    sub("~", "", deparse(stanreg$formula[1:2])), ")")
+  model_data[, (eval(parse(text = txt), envir = environment()))]
+}
+
 #' Get model data from stanreg
 #'
 #' @param stanreg object of class stanreg
@@ -289,12 +298,14 @@ stan_chol <- function(mat) {
 stanreg_dtbl <- function(stanreg, model_frame = FALSE, get_y = FALSE) {
   if (model_frame) {
     dt <- copy(as.data.table(stanreg$glmod$fr))
-    if (!get_y) {
-      y <- sub("~", "", deparse(stanreg$formula[1:2]))
-      dt[, eval(y) := NULL]
-    }
   } else {
-    dt <- stanreg$data
+    dt <- copy(as.data.table(stanreg$data))
+  }
+
+  if (!get_y) {
+    y_names <- names(stanreg_get_y(stanreg))
+    y_names <- y_names[y_names %in% names(dt)]
+    dt[, eval(y_names) := NULL]
   }
 
   dt
@@ -304,5 +315,3 @@ stanreg_dtbl <- function(stanreg, model_frame = FALSE, get_y = FALSE) {
 dot_dot_len <- function(...) {
   length(match.call(expand.dots = TRUE)) - 1L
 }
-
-

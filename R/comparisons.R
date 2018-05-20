@@ -10,23 +10,22 @@
 #' stanreg1 <- example_stanreg()
 #' stanreg2 <- update(stanreg1, . ~ . - 1)
 #' stanreg3 <- update(stanreg1, . ~ . + floor:log_uranium)
-#' loo_list <- lapply(list(stanreg1, stanreg2, stanreg3), rstanarm::loo)
+#' loo_list <- lapply(list(M1 = stanreg1, M2 = stanreg2, M3 = stanreg3), rstanarm::loo)
 #' loo_table(loo_list)
-#' loo_table(loo_list, "elpd_loo")
-loo_table <- function(loo_list, stat = c("looic", "elpd_loo", "p_loo")) {
-  stat <- stat[1]
+#' loo_table(loo_list, stat="elpd_loo")
+loo_table <- function(loo_list, stat = c("elpd_loo", "looic", "p_loo")) {
+  stat <- match.arg(stat)
   n_fit <- length(loo_list)
   n_compare <- pairwise(n_fit)
   lnames <- names(loo_list)
 
   if (is.null(lnames)) {
     lnames <- paste0("loo", 1:n_fit)
-  }
-
-  no_names <- !nzchar(lnames)
-
-  if (any(no_names)) {
-    lnames[no_names] <- paste0("loo", which(no_names))
+  } else {
+    no_names <- !nzchar(lnames)
+    if (any(no_names)) {
+      lnames[no_names] <- paste0("loo", which(no_names))
+    }
   }
 
   ldata <- lapply(
@@ -58,7 +57,7 @@ loo_table <- function(loo_list, stat = c("looic", "elpd_loo", "p_loo")) {
     has_diff_n <- n_obs[1] != n_obs[2]
 
     if (has_nas | has_diff_n) {
-      loo_comp[[p]] <- NA
+      loo_comp[[p]] <- NA_real_
     } else {
       sum_data <- c(ldata[[p1]]$sum_lp, ldata[[p2]]$sum_lp)
       m_order <- order(sum_data, decreasing = elpd_order)
@@ -79,6 +78,7 @@ loo_table <- function(loo_list, stat = c("looic", "elpd_loo", "p_loo")) {
       names(tbl) <- paste0(
         mod_names[m_order[1]], sig_ast,
         mod_names[m_order[2]])
+
       loo_comp[[p]] <- tbl
     }
   }
@@ -261,12 +261,12 @@ contrast_data <- function(stanreg, new_group = NULL, marginalize_factors = NULL,
 #' @param ccoef contrast coefficients corresponding to the order of the data
 #' sets in \code{cdata}.
 #' @param width confidence interval width. Sent to the \code{prob} argument
-#' from \code{\link[rstanarm]{posterior_interval}}.
+#' from \code{\link[rstantools]{posterior_interval}}.
 #' @param yfun the stat function to use to collapse the predictions into a
 #' scalar value. Corresponds to the average of the predicted responses for each
 #' data set in \code{cdata}. Default is median.
-#' @param ... additional parameters passed to the function \code{\link[rstanarm]{posterior_predict}}
-#' \code{\link[rstanarm]{posterior_interval}}.
+#' @param ... additional parameters passed to the function \code{\link[rstantools]{posterior_predict}}
+#' \code{\link[rstantools]{posterior_interval}}.
 #'
 #' @return list containing the confidence interval and posterior predictive
 #' contrast difference

@@ -16,6 +16,7 @@
 #'
 #' @import data.table
 #' @import ggplot2
+#' @import ggdistribute
 #' @importFrom rstantools posterior_interval
 #' @importFrom magrittr %>%
 #' @importFrom mejr nlist dtbl2list pairwise

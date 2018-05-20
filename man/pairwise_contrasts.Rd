@@ -14,7 +14,7 @@ pairwise_contrasts(stanreg, cdata, width = 0.95, yfun = median,
 each.}
 
 \item{width}{confidence interval width. Sent to the \code{prob} argument
-from \code{\link[rstanarm]{posterior_interval}}.}
+from \code{\link[rstantools]{posterior_interval}}.}
 
 \item{yfun}{the stat function to use to collapse the predictions into a
 scalar value. Corresponds to the average of the predicted responses for each
@@ -23,8 +23,8 @@ data set in \code{cdata}. Default is median.}
 \item{pp_all}{posterior predictions for each list item in cdata. Defaults to
 \code{FALSE}}
 
-\item{...}{additional parameters passed to the function \code{\link[rstanarm]{posterior_predict}}
-\code{\link[rstanarm]{posterior_interval}}.}
+\item{...}{additional parameters passed to the function \code{\link[rstantools]{posterior_predict}}
+\code{\link[rstantools]{posterior_interval}}.}
 }
 \value{
 list containing CI matrix and posterior differences

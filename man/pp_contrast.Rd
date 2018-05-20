@@ -16,14 +16,14 @@ each.}
 sets in \code{cdata}.}
 
 \item{width}{confidence interval width. Sent to the \code{prob} argument
-from \code{\link[rstanarm]{posterior_interval}}.}
+from \code{\link[rstantools]{posterior_interval}}.}
 
 \item{yfun}{the stat function to use to collapse the predictions into a
 scalar value. Corresponds to the average of the predicted responses for each
 data set in \code{cdata}. Default is median.}
 
-\item{...}{additional parameters passed to the function \code{\link[rstanarm]{posterior_predict}}
-\code{\link[rstanarm]{posterior_interval}}.}
+\item{...}{additional parameters passed to the function \code{\link[rstantools]{posterior_predict}}
+\code{\link[rstantools]{posterior_interval}}.}
 }
 \value{
 list containing the confidence interval and posterior predictive

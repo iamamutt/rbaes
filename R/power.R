@@ -465,29 +465,38 @@ bayes_p <- function(x, null = 0) {
   return(c(leq_null = 1 - p, gt_null = p))
 }
 
-cohens_d <- function(x, sdx, y = NULL, sdy = NULL, nx = NULL,
-                     ny = NULL, one_sample_test_pt = 0) {
-  null_nx <- is.null(nx)
-  null_ny <- is.null(ny)
-  if (is.null(y)) {
-    (x - one_sample_test_pt) / sdx
+#' Effect size using Hedges' *g*
+#' @export
+cohens_d <- function(mu_x, sd_x, n_x, mu_y = NULL, sd_y = NULL,
+                     n_y = NULL, one_sample_test_val = 0.0) {
+  if (missing(mu_x) || missing(sd_x) || missing(n_x)) {
+    stop("Missing mean, sd, or sample size for `x`")
+  }
+
+  if (is.null(n_x)) {
+    stop("Must provide sample size value for `x`")
+  }
+
+  use_y <- !is.null(mu_y)
+
+  if (use_y && is.null(sd_y)) {
+      stop("Must provide standard deviation value for `y`")
+  }
+
+  if (is.null(n_y)) {
+    if (use_y && is.null(n_x)) {
+      stop("Sample sizes for `x` and `y` cannot both be `NULL`")
+    }
+    n_y <- n_x
+  }
+
+  if (use_y) {
+    (mu_x - one_sample_test_val) / sd_x
   } else {
-    if (is.null(sdy)) {
-      stop("y arg specified without specifying sdy")
-    }
-    if (null_nx & null_ny) {
-      # equal sample sizes
-      nx <- 2
-      ny <- 2
-    } else {
-      if (xor(null_nx, null_ny)) {
-        stop("Only one sample size specified. If sample sizes are equal, leave nx, ny = NULL")
-      }
-    }
-    sd_vec <- cbind(sdx, sdy)
-    n_vec <- cbind(nx, ny)
+    sd_vec <- cbind(sd_x, sd_y)
+    n_vec <- cbind(n_x, n_y)
     sd_p <- pooled_sd(sd_vec, n_vec)
-    fx_size <- (x - y) / sd_p
+    (mu_x - mu_y) / sd_p
   }
 }
 
@@ -557,8 +566,8 @@ one_sample_mvt_tests <- function(refitted) {
   par_emb <- mu[, 3] - mu[, 2]
 
   # effect sizes
-  fx_size_EF <- cohens_d(mu[, 2], sigma[, 2], mu[, 1], sigma[, 1])
-  fx_size_PF <- cohens_d(mu[, 3], sigma[, 3], mu[, 1], sigma[, 1])
+  #fx_size_EF <- cohens_d(mu[, 2], sigma[, 2], mu[, 1], sigma[, 1]) fix
+  #fx_size_PF <- cohens_d(mu[, 3], sigma[, 3], mu[, 1], sigma[, 1])
 
   # test values
   hdi_EF <- rbaes::hdi(emb_fam, 0.9)

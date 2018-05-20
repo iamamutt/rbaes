@@ -4,7 +4,7 @@
 \alias{loo_table}
 \title{table of LOO comparisons}
 \usage{
-loo_table(loo_list, stat = c("looic", "elpd_loo", "p_loo"))
+loo_table(loo_list, stat = c("elpd_loo", "looic", "p_loo"))
 }
 \arguments{
 \item{loo_list}{a list of objects of the type \code{loo}}
@@ -21,7 +21,7 @@ table of LOO comparisons
 stanreg1 <- example_stanreg()
 stanreg2 <- update(stanreg1, . ~ . - 1)
 stanreg3 <- update(stanreg1, . ~ . + floor:log_uranium)
-loo_list <- lapply(list(stanreg1, stanreg2, stanreg3), rstanarm::loo)
+loo_list <- lapply(list(M1 = stanreg1, M2 = stanreg2, M3 = stanreg3), rstanarm::loo)
 loo_table(loo_list)
-loo_table(loo_list, "elpd_loo")
+loo_table(loo_list, stat="elpd_loo")
 }
