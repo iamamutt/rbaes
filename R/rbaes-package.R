@@ -12,7 +12,7 @@
 #'
 #' Below are some useful links:
 #'
-#' - [http://mc-stan.org/]
+#' - http://mc-stan.org/
 #'
 #' @import data.table
 #' @import ggplot2
@@ -22,6 +22,7 @@
 #' @importFrom mejr nlist dtbl2list pairwise
 #' @docType package
 #' @name rbaes-package
+#' @md
 NULL
 
 #' @importFrom mejr pval_format

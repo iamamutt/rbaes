@@ -19,6 +19,6 @@ View vignettes with \code{browseVignettes(package ="rbaes")}.
 
 Below are some useful links:
 \itemize{
-\item \link{http://mc-stan.org/}
+\item http://mc-stan.org/
 }
 }
