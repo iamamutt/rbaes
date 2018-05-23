@@ -6,6 +6,7 @@
 .Ruserdata
 *.Rproj
 *.Rproj.user
+*.code-workspace
 exec/*.rda
 .junk
 rbaes.7z
