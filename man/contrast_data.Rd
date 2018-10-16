@@ -5,7 +5,8 @@
 \title{get data for contrasts}
 \usage{
 contrast_data(stanreg, new_group = NULL, marginalize_factors = NULL,
-  margin_ignore = NULL, set_numerics = NULL, subset_expression = NULL)
+  margin_ignore = NULL, set_numerics = NULL,
+  subset_expression = NULL)
 }
 \arguments{
 \item{stanreg}{stanreg object from rstanarm}
