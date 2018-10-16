@@ -1,8 +1,8 @@
 Package: rbaes
 Type: Package
 Title: R Bayesian Analysis and Estimation Stuff
-Version: 0.1.0.9002
-Date: 2018-05-19
+Version: 0.1.1.9000
+Date: 2018-10-15
 Authors@R: as.person(c(
     "Joseph M. Burling <josephburling@gmail.com> [aut, cre]"))
 Description: A set of functions and routines for Bayesian data analysis
@@ -33,5 +33,5 @@ Remotes:
   iamamutt/mejr,
   iamamutt/ggdistribute
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1.9000
+RoxygenNote: 6.1.0
 Roxygen: list(markdown=TRUE)
