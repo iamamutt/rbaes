@@ -32,7 +32,7 @@ loo_table <- function(loo_list, stat = c("elpd_loo", "looic", "p_loo")) {
     loo_list,
     function(i) {
       lp <- i$pointwise[, stat]
-      nlist(lp, sum_lp = sum(lp))
+      list(lp=lp, sum_lp = sum(lp))
     })
 
   loo_comp <- list()
@@ -287,7 +287,7 @@ pp_contrast <- function(stanreg, cdata, ccoef, width = 0.95,
   pp_list <- pp_cdata(stanreg, cdata = cdata, row_stat = yfun, ...)
 
   # posterior predictive contrast
-  pp <- apply_contrast(pp_list, ccoef)
+  pp <- apply_contrast2(pp_list, ccoef)
 
   # contrast interval
   ci <- rstanarm::posterior_interval(pp, prob = width)
@@ -345,7 +345,7 @@ pairwise_contrasts <- function(stanreg, cdata, width = 0.95,
     pred.each <- do.call(cbind, lapply(
       pp_list,
       function(p) {
-        apply_contrast(list(p), 1)
+        apply_contrast2(list(p), 1)
       }))
     colnames(pred.each) <- names(pp_list)
     ci.each <- rstanarm::posterior_interval(pred.each, prob = width)

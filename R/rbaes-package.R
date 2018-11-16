@@ -19,12 +19,7 @@
 #' @import ggdistribute
 #' @importFrom rstantools posterior_interval
 #' @importFrom magrittr %>%
-#' @importFrom mejr nlist dtbl2list pairwise
 #' @docType package
 #' @name rbaes-package
 #' @md
 NULL
-
-#' @importFrom mejr pval_format
-#' @export
-mejr::pval_format

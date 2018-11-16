@@ -315,3 +315,140 @@ stanreg_dtbl <- function(stanreg, model_frame = FALSE, get_y = FALSE) {
 dot_dot_len <- function(...) {
   length(match.call(expand.dots = TRUE)) - 1L
 }
+
+#' All pairwise combinations
+#'
+#' @param n set size (integer)
+#'
+#' @return n pairs by 2 matrix
+#'
+#' @examples
+#' pairwise(3)
+pairwise <- function(n) {
+  if (n < 2) {
+    return(NULL)
+  }
+  t(utils::combn(n, 2))
+}
+
+
+#' Create a list from object names
+#'
+#' @param ... same as in a regular list
+#'
+#' @examples
+#' x <- 5
+#' y <- 'stuff'
+#' nlist(x, y)
+nlist <- function(...) {
+  nms <- as.character(match.call())[-1L]
+  out <- list(...)
+  named <- names(out)
+  if (is.null(named)) { # all unnamed
+    names(out) <- nms
+  } else {
+    which_named <- nzchar(named)
+    if (!all(which_named)) { # partial named
+      names(out)[!which_named] <- nms[!which_named]
+    }
+  }
+  return(out)
+}
+
+
+#' Split a data.table into separate lists by group
+#'
+#' @param data a data.frame or data.table
+#' @param ... unquoted column names
+#'
+#' @return a list of data.table/data.frame objects
+#' @examples
+#' data <- cars
+#' dtbl2list(data, speed)
+dtbl2list <- function(data, ...) {
+  warning("data.table now has `data.table::split` method")
+  if (!is.data.table(data)) {
+    dt <- as.data.table(data)
+    dtbl <- FALSE
+  } else {
+    dt <- copy(data)
+    dtbl <- TRUE
+  }
+
+  by_cols <- unlist(symbol2char(...))
+
+  if (!(by_cols %in% names(dt))) {
+    stop(sprintf("check that columns exist:\n  %s", paste(by_cols, collapse=", ")))
+  }
+
+  dt[, `__BY` := paste(unlist(.BY), collapse="."), by=by_cols]
+  dt[, `__GRP` := .GRP, by=by_cols]
+
+  ids <- dt[, .N, by=.(`__GRP`, `__BY`)]
+
+  grps <- ids$`__G`
+  gnames <- ids$`__BY`
+  dt[, `__BY` := NULL]
+
+  glist <- lapply(grps, function(g) {
+    y <- dt[`__GRP` == g, ]
+    y[, `__GRP` := NULL]
+    if (!dtbl) {
+      y <- as.data.frame(y)
+    }
+    return(y)
+  })
+
+  names(glist) <- gnames
+
+  return(glist)
+}
+
+#' string format p-value cutoffs
+#'
+#' @param p a p value between 0 and 1
+#'
+#' @return character matrix
+#'
+#' @examples
+#' pval_format(.055)
+#' pval_format(.05)
+#' pval_format(.049)
+#' pval_format(.01)
+#' pval_format(.001)
+#' pval_format(.0001)
+#'
+#' p <- seq(0, 0.06, .01)
+#' data.frame(p, pval_format(p))
+pval_format <- function(p) {
+  row_mat <- function(s, t) {
+    matrix(c(t, s), ncol=2)
+  }
+  ptab <- do.call(rbind, lapply(p, function(i) {
+    if (i > 0.05) {
+      return(row_mat("", "n.s."))
+    }
+    if (i < 0.05 & i > 0.01) {
+      return(row_mat("*", "p < .05"))
+    }
+    if (i < 0.01 & i > 0.001) {
+      return(row_mat("**", "p < .01"))
+    }
+    if (i < 0.001 & i >= 0) {
+      return(row_mat("***", "p < .001"))
+    }
+    if (i == 0.05) {
+      return(row_mat("*", "p = .05"))
+    }
+    if (i == 0.01) {
+      return(row_mat("**", "p = .01"))
+    }
+    if (i == 0.001) {
+      return(row_mat("***", "p = .001"))
+    }
+    stop("invalid p value")
+  }))
+  colnames(ptab) <- c("Pr cutoff", "Pr significance")
+  return(ptab)
+}
+

@@ -75,7 +75,7 @@ get_contrast_rows <- function(form, data) {
   data[, eval(form[-1])][[1]]
 }
 
-apply_contrast <- function(pp_list, ccoef) {
+apply_contrast2 <- function(pp_list, ccoef) {
   n_pp <- length(pp_list)
 
   if (length(ccoef) != n_pp) {

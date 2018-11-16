@@ -21,8 +21,7 @@ Imports:
   data.table (>= 1.11.0),
   magrittr (>= 1.5),
   bayesplot,
-  mejr,
-  ggdistribute
+  ggdistribute (>= 1.0.2)
 LinkingTo:
   StanHeaders (>= 2.17.2),
   rstan (>= 2.17.3),
@@ -30,9 +29,6 @@ LinkingTo:
   Rcpp (>= 0.12.16),
   RcppEigen (>= 0.3.3.4.0),
   rstanarm (>= 2.17.3)
-Remotes:
-  iamamutt/mejr,
-  iamamutt/ggdistribute
 VignetteBuilder: knitr
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 Roxygen: list(markdown=TRUE)
